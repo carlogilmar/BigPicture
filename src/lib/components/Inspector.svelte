@@ -103,7 +103,7 @@
   ></button>
 
   <div
-    class="relative flex max-h-[85vh] w-full max-w-2xl flex-col rounded-2xl border border-neutral-200/80 bg-white shadow-2xl dark:border-neutral-700/80 dark:bg-neutral-900"
+    class="relative flex max-h-[85vh] w-full max-w-4xl flex-col rounded-2xl border border-neutral-200/80 bg-white shadow-2xl dark:border-neutral-700/80 dark:bg-neutral-900"
   >
     <header
       class="flex shrink-0 items-center gap-2 border-b border-neutral-200/60 px-5 py-3 dark:border-neutral-700/60"
@@ -158,6 +158,8 @@
             minHeight="9rem"
             placeholder="Add a description — click Edit to write markdown. Links, ```mermaid diagrams and - [ ] checklists all work."
             onCommit={commitNotes}
+            floatingEdit
+            floatingContained
           />
         {/key}
       </div>

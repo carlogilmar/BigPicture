@@ -29,6 +29,10 @@
     // Replace the inline top/bottom Edit buttons with a single floating FAB in
     // the bottom-right corner, so reading isn't interrupted (used by notes).
     floatingEdit?: boolean;
+    // Anchor the floating FAB to the nearest positioned ancestor (`absolute`)
+    // instead of the viewport (`fixed`) — for use inside a modal so the button
+    // sits in the modal's corner, not the screen's (used by the task detail).
+    floatingContained?: boolean;
   };
 
   let {
@@ -39,7 +43,11 @@
     onLinkClick,
     outline = false,
     floatingEdit = false,
+    floatingContained = false,
   }: Props = $props();
+
+  // Position class for the floating Edit/Done FAB.
+  const fabPos = $derived(floatingContained ? "absolute" : "fixed");
 
   const md = createMarkdownIt();
 
@@ -570,14 +578,16 @@
       onclick={finishEditing}
       title="Finish editing — show the rendered note"
       aria-label="Finish editing"
-      class="fixed bottom-6 right-6 z-20 inline-flex items-center gap-2 rounded-full bg-blue-600 px-4 py-2.5 text-sm font-medium text-white shadow-lg transition-colors hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
+      class="{fabPos} bottom-6 right-6 z-20 inline-flex items-center gap-2 rounded-full bg-blue-600 px-4 py-2.5 text-sm font-medium text-white shadow-lg transition-colors hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
     >
       <svg viewBox="0 0 20 20" fill="currentColor" class="h-4 w-4"><path fill-rule="evenodd" d="M16.7 5.3a1 1 0 010 1.4l-7.5 7.5a1 1 0 01-1.4 0L4.3 10.7a1 1 0 011.4-1.4l2.8 2.79 6.8-6.79a1 1 0 011.4 0z" clip-rule="evenodd"/></svg>
       Done
     </button>
   {/if}
 {:else if rendered}
-  <div class="relative">
+  <!-- `relative` only when the small top-right Edit button needs anchoring; with
+       floatingEdit the FAB should anchor higher up (the modal, when contained). -->
+  <div class:relative={!floatingEdit}>
     {#if !floatingEdit}
       <button
         type="button"
@@ -649,7 +659,7 @@
         onclick={startEditing}
         title="Edit note"
         aria-label="Edit note"
-        class="fixed bottom-6 right-6 z-20 inline-flex items-center gap-2 rounded-full border border-neutral-200/70 bg-white/90 px-4 py-2.5 text-sm font-medium text-neutral-700 shadow-lg backdrop-blur transition-colors hover:bg-neutral-100 dark:border-neutral-700/70 dark:bg-neutral-900/85 dark:text-neutral-200 dark:hover:bg-neutral-800"
+        class="{fabPos} bottom-6 right-6 z-20 inline-flex items-center gap-2 rounded-full border border-neutral-200/70 bg-white/90 px-4 py-2.5 text-sm font-medium text-neutral-700 shadow-lg backdrop-blur transition-colors hover:bg-neutral-100 dark:border-neutral-700/70 dark:bg-neutral-900/85 dark:text-neutral-200 dark:hover:bg-neutral-800"
       >
         <svg viewBox="0 0 20 20" fill="currentColor" class="h-4 w-4">
           <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
