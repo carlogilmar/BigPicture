@@ -112,10 +112,13 @@ export function createMarkdownIt(): MarkdownIt {
     if (info === "lettering" || info.startsWith("lettering ")) {
       return renderLettering(tokens[idx].content, info.split(/\s+/).slice(1), md);
     }
-    // ```workflow → a numbered "chain" of steps (one per line; `backtick`
-    // segments render as tag badges). Replaces the old workflow entity.
-    if (info === "workflow") {
-      return renderWorkflow(tokens[idx].content, md);
+    // ```workflow [title] → a numbered "chain" of steps in a card (PNG copy).
+    if (info === "workflow" || info.startsWith("workflow ")) {
+      return renderWorkflow(tokens[idx].content, rawInfo.slice(8).trim(), md);
+    }
+    // ```list → a simple, hover-friendly list of ideas (one row each).
+    if (info === "list") {
+      return renderList(tokens[idx].content, md);
     }
     // ```files → a changed-files list (status chip · path · ±lines · note).
     if (info === "files") {
@@ -380,10 +383,10 @@ const CARD_GRADIENT = new Set(["sunset", "ocean", "forest", "dusk", "candy"]);
 const CARD_ENTITY =
   /^(note|list|flashcard|blueprint|storyboard):(\d+)$/;
 
-// ```workflow → a numbered chain of steps. One step per non-empty line;
-// `backtick` segments render as tag badges (matching the old workflow entity's
-// style). CSS-only/synchronous like the other fences.
-function renderWorkflow(source: string, md: MarkdownIt): string {
+// ```workflow [title] → a numbered chain of steps in a card. One step per
+// non-empty line; `backtick` segments render as tag badges. Wrapped in a card
+// (optional fence-info header) with a hover effect + a PNG copy button (no GIF).
+function renderWorkflow(source: string, title: string, md: MarkdownIt): string {
   const steps = source
     .split("\n")
     .map((l) => l.trim())
@@ -403,7 +406,54 @@ function renderWorkflow(source: string, md: MarkdownIt): string {
       return `<li class="md-wf-step"><span class="md-wf-num">${i + 1}</span><span class="md-wf-text">${parts}</span></li>`;
     })
     .join("");
-  return `<ol class="md-workflow">${items}</ol>`;
+  // Default header "Workflow" when the fence gives no title.
+  const bar = blockHeader(
+    title || "Workflow",
+    "",
+    `${steps.length} step${steps.length === 1 ? "" : "s"}`,
+    md,
+  );
+  return withImgCopy(
+    `<div class="md-workflow-block">${bar}<ol class="md-workflow">${items}</ol></div>`,
+  );
+}
+
+// ```list → a simple list of ideas as one row each (a visual, hover-friendly
+// list — NOT a workflow), styled like the files block. Per line:
+//   idea title [— description] [- <color>]
+// A trailing ` - <color>` tints the row's left rail; an optional ` — ` (or
+// ` -- ` / ` # `) adds a description row beneath. No export buttons. Both the
+// title and description support inline markdown.
+function renderList(source: string, md: MarkdownIt): string {
+  const rows: string[] = [];
+  for (const raw of source.split("\n")) {
+    let text = raw.trim();
+    if (!text) continue;
+    // Trailing ` - <color>` (single hyphen) → the row's accent.
+    let color = "";
+    const cm = /\s+-\s+([a-zA-Z]+)\s*$/.exec(text);
+    if (cm && NAMED_COLORS[cm[1].toLowerCase()]) {
+      color = NAMED_COLORS[cm[1].toLowerCase()];
+      text = text.slice(0, cm.index).trim();
+    }
+    // Optional description after ` — ` / ` -- ` / ` # `.
+    let desc = "";
+    const dm = /\s+(?:—|--|#)\s+(.*)$/.exec(text);
+    if (dm) {
+      desc = dm[1].trim();
+      text = text.slice(0, dm.index).trim();
+    }
+    if (!text && !desc) continue;
+    const style = color ? ` style="--c:${color}"` : "";
+    rows.push(
+      `<div class="md-list-row"${style}>` +
+        `<div class="md-list-title">${md.renderInline(text)}</div>` +
+        (desc ? `<div class="md-list-desc">${md.renderInline(desc)}</div>` : "") +
+        `</div>`,
+    );
+  }
+  if (rows.length === 0) return "";
+  return `<div class="md-list">${rows.join("")}</div>`;
 }
 
 function renderCards(source: string, md: MarkdownIt): string {

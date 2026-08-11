@@ -12,6 +12,7 @@
     id: string;
     label: string;
     icon: string;
+    cat: string; // category header the item groups under
     hint?: string;
     keywords?: string;
     snippet?: string;
@@ -73,39 +74,48 @@
     "\n```flow Request lifecycle\nRequest: ip, token\nRateLimiter: new\nHandler: sync()\nSQLite: sqlx\n```\n";
   const COMPARE =
     "\n```compare Batched read\nSELECT * FROM todos WHERE list_id = ?;\n---\nSELECT id, title FROM todos\nWHERE list_id IN (?, ?, ?) AND archived = 0;\n```\n";
+  const LIST =
+    "\n```list\nFirst idea — an optional description - violet\nSecond idea - teal\nThird idea\n```\n";
 
+  // Grouped by `cat` (the array order == menu order, so category headers appear
+  // when the category changes).
   const COMMANDS: Cmd[] = [
-    { id: "h1", label: "Heading 1", icon: "H₁", hint: "# ", keywords: "title heading", snippet: "# " },
-    { id: "h2", label: "Heading 2", icon: "H₂", hint: "## ", keywords: "subheading", snippet: "## " },
-    { id: "h3", label: "Heading 3", icon: "H₃", hint: "### ", snippet: "### " },
-    { id: "bullet", label: "Bulleted list", icon: "•", keywords: "list ul unordered", snippet: "- " },
-    { id: "numbered", label: "Numbered list", icon: "1.", keywords: "list ol ordered", snippet: "1. " },
-    { id: "todo", label: "Checklist", icon: "☑", keywords: "task todo checkbox", snippet: "- [ ] " },
-    { id: "quote", label: "Quote", icon: "❝", keywords: "blockquote", snippet: "> " },
-    { id: "callout", label: "Callout", icon: "💡", keywords: "note tip warning admonition", snippet: "> [!NOTE]\n> " },
-    { id: "section", label: "Toggle section", icon: "▸", keywords: "collapsible collapse fold toggle section details summary expand hide", snippet: SECTION },
-    { id: "code", label: "Code block", icon: "‹›", keywords: "fence pre snippet", snippet: "```\n\n```\n", caretOffset: 4 },
-    { id: "table", label: "Table", icon: "▦", keywords: "grid rows columns", snippet: TABLE },
-    { id: "diagram", label: "Diagram", icon: "📈", keywords: "mermaid flowchart graph", snippet: MERMAID },
-    { id: "cards", label: "Cards", icon: "▤", keywords: "dashboard links tiles heading section", snippet: CARDS },
-    { id: "files", label: "Changed files", icon: "🗂", keywords: "files changed diff pr status added modified deleted", snippet: FILES },
-    { id: "stats", label: "Stat cards", icon: "▦", keywords: "stats metrics numbers summary pr counts", snippet: STATS },
-    { id: "spec", label: "Spec sheet", icon: "▤", keywords: "spec fields key value risk rollback metadata pr", snippet: SPEC },
-    { id: "terminal", label: "Terminal", icon: "❯", keywords: "terminal console command shell output cargo test run animated", snippet: TERMINAL },
-    { id: "tree", label: "File tree", icon: "🗂", keywords: "tree files directory structure folder pulse", snippet: TREE },
-    { id: "flow", label: "Flow / pipeline", icon: "⇥", keywords: "flow pipeline sequence request trace steps diagram", snippet: FLOW },
-    { id: "compare", label: "Before / after", icon: "⇄", keywords: "compare before after diff old new change crossfade", snippet: COMPARE },
-    { id: "bar-chart", label: "Bar chart", icon: "▊", keywords: "chart graph bar data viz", snippet: BAR_CHART },
-    { id: "donut-chart", label: "Donut chart", icon: "◑", keywords: "chart pie donut data viz", snippet: DONUT_CHART },
-    { id: "marquee", label: "Marquee banner", icon: "🎞", keywords: "marquee scroll banner ticker announcement", snippet: MARQUEE },
-    { id: "progress", label: "Progress bars", icon: "▰", keywords: "progress bar percent goal tracker", snippet: PROGRESS },
-    { id: "treemap", label: "Treemap", icon: "▧", keywords: "treemap tree map squares proportion size area", snippet: TREEMAP },
-    { id: "lettering", label: "Lettering (big title)", icon: "🅰", keywords: "lettering title announcement banner display big centered", snippet: LETTERING },
-    { id: "workflow", label: "Workflow (steps)", icon: "⛓", keywords: "workflow steps chain process checklist sequence pipeline", snippet: WORKFLOW },
-    { id: "divider", label: "Divider", icon: "—", keywords: "hr rule separator", snippet: "\n---\n" },
-    { id: "link", label: "Link", icon: "🔗", keywords: "url entity href", action: "link" },
-    { id: "image", label: "Image", icon: "🖼", keywords: "picture photo", action: "image" },
-    { id: "icon", label: "Icon", icon: "◈", keywords: "icon dev logo lucide devicon jira confluence docker database", action: "icon" },
+    // — Basic —
+    { id: "h1", label: "Heading 1", icon: "H₁", cat: "Basic", hint: "# ", keywords: "title heading", snippet: "# " },
+    { id: "h2", label: "Heading 2", icon: "H₂", cat: "Basic", hint: "## ", keywords: "subheading", snippet: "## " },
+    { id: "h3", label: "Heading 3", icon: "H₃", cat: "Basic", hint: "### ", snippet: "### " },
+    { id: "quote", label: "Quote", icon: "❝", cat: "Basic", keywords: "blockquote", snippet: "> " },
+    { id: "callout", label: "Callout", icon: "💡", cat: "Basic", keywords: "note tip warning admonition", snippet: "> [!NOTE]\n> " },
+    { id: "section", label: "Toggle section", icon: "▸", cat: "Basic", keywords: "collapsible collapse fold toggle section details summary expand hide", snippet: SECTION },
+    { id: "code", label: "Code block", icon: "‹›", cat: "Basic", keywords: "fence pre snippet", snippet: "```\n\n```\n", caretOffset: 4 },
+    { id: "table", label: "Table", icon: "▦", cat: "Basic", keywords: "grid rows columns", snippet: TABLE },
+    { id: "divider", label: "Divider", icon: "—", cat: "Basic", keywords: "hr rule separator", snippet: "\n---\n" },
+    { id: "link", label: "Link", icon: "🔗", cat: "Basic", keywords: "url entity href", action: "link" },
+    { id: "image", label: "Image", icon: "🖼", cat: "Basic", keywords: "picture photo", action: "image" },
+    { id: "icon", label: "Icon", icon: "◈", cat: "Basic", keywords: "icon dev logo lucide devicon jira confluence docker database", action: "icon" },
+    // — Lists & ideas —
+    { id: "bullet", label: "Bulleted list", icon: "•", cat: "Lists & ideas", keywords: "list ul unordered", snippet: "- " },
+    { id: "numbered", label: "Numbered list", icon: "1.", cat: "Lists & ideas", keywords: "list ol ordered", snippet: "1. " },
+    { id: "todo", label: "Checklist", icon: "☑", cat: "Lists & ideas", keywords: "task todo checkbox", snippet: "- [ ] " },
+    { id: "list", label: "List of ideas", icon: "☰", cat: "Lists & ideas", keywords: "list ideas rows colored items simple notes brainstorm", snippet: LIST },
+    { id: "workflow", label: "Workflow (steps)", icon: "⛓", cat: "Lists & ideas", keywords: "workflow steps chain process sequence pipeline", snippet: WORKFLOW },
+    // — PR blocks —
+    { id: "files", label: "Changed files", icon: "🗂", cat: "PR blocks", keywords: "files changed diff pr status added modified deleted", snippet: FILES },
+    { id: "stats", label: "Stat cards", icon: "▦", cat: "PR blocks", keywords: "stats metrics numbers summary pr counts", snippet: STATS },
+    { id: "spec", label: "Spec sheet", icon: "▤", cat: "PR blocks", keywords: "spec fields key value risk rollback metadata pr", snippet: SPEC },
+    { id: "terminal", label: "Terminal", icon: "❯", cat: "PR blocks", keywords: "terminal console command shell output cargo test run animated", snippet: TERMINAL },
+    { id: "tree", label: "File tree", icon: "🗂", cat: "PR blocks", keywords: "tree files directory structure folder pulse", snippet: TREE },
+    { id: "flow", label: "Flow / pipeline", icon: "⇥", cat: "PR blocks", keywords: "flow pipeline sequence request trace steps diagram", snippet: FLOW },
+    { id: "compare", label: "Before / after", icon: "⇄", cat: "PR blocks", keywords: "compare before after diff old new change crossfade", snippet: COMPARE },
+    // — Charts & visuals —
+    { id: "diagram", label: "Diagram", icon: "📈", cat: "Charts & visuals", keywords: "mermaid flowchart graph", snippet: MERMAID },
+    { id: "cards", label: "Cards", icon: "▤", cat: "Charts & visuals", keywords: "dashboard links tiles heading section", snippet: CARDS },
+    { id: "bar-chart", label: "Bar chart", icon: "▊", cat: "Charts & visuals", keywords: "chart graph bar data viz", snippet: BAR_CHART },
+    { id: "donut-chart", label: "Donut chart", icon: "◑", cat: "Charts & visuals", keywords: "chart pie donut data viz", snippet: DONUT_CHART },
+    { id: "treemap", label: "Treemap", icon: "▧", cat: "Charts & visuals", keywords: "treemap tree map squares proportion size area", snippet: TREEMAP },
+    { id: "progress", label: "Progress bars", icon: "▰", cat: "Charts & visuals", keywords: "progress bar percent goal tracker", snippet: PROGRESS },
+    { id: "marquee", label: "Marquee banner", icon: "🎞", cat: "Charts & visuals", keywords: "marquee scroll banner ticker announcement", snippet: MARQUEE },
+    { id: "lettering", label: "Lettering (big title)", icon: "🅰", cat: "Charts & visuals", keywords: "lettering title announcement banner display big centered", snippet: LETTERING },
   ];
 
   let open = $state(false);
@@ -307,6 +317,9 @@
     tabindex="-1"
   >
     {#each items as cmd, i (cmd.id)}
+      {#if i === 0 || items[i - 1].cat !== cmd.cat}
+        <div class="slash-cat">{cmd.cat}</div>
+      {/if}
       <button
         type="button"
         role="option"
@@ -347,6 +360,17 @@
     box-shadow:
       0 10px 30px rgba(0, 0, 0, 0.5),
       0 0 0 1px rgba(255, 255, 255, 0.06);
+  }
+  .slash-cat {
+    padding: 0.4rem 0.55rem 0.2rem;
+    font-size: 0.62rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: rgba(0, 0, 0, 0.4);
+  }
+  :global(html.dark) .slash-cat {
+    color: rgba(255, 255, 255, 0.4);
   }
   .slash-item {
     display: flex;

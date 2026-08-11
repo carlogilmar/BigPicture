@@ -1550,6 +1550,29 @@ html.dark .markdown-body .md-chart {
 /* ```lettering — big centered display-type announcement (Sprint 38).  */
 /* ------------------------------------------------------------------ */
 /* ```workflow — a numbered chain of steps (Sprint 50). */
+/* Workflow in a card (Sprint 60) — PNG-copyable, with a per-step hover. */
+.markdown-body .md-workflow-block {
+  margin: 0.7rem 0;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 10px;
+  overflow: hidden;
+  background: #ffffff;
+}
+html.dark .markdown-body .md-workflow-block {
+  border-color: rgba(255, 255, 255, 0.14);
+  background: #171e29;
+}
+.markdown-body .md-workflow-block .md-workflow {
+  margin: 0;
+  padding: 14px 16px;
+}
+.markdown-body .md-workflow-block .md-wf-step {
+  border-radius: 8px;
+  transition: background 0.12s;
+}
+.markdown-body .md-workflow-block .md-wf-step:hover {
+  background: color-mix(in srgb, #2563eb 7%, transparent);
+}
 .markdown-body .md-workflow {
   list-style: none;
   margin: 0.7rem 0;
@@ -1610,6 +1633,51 @@ html.dark .markdown-body .md-workflow .md-wf-num {
 html.dark .markdown-body .md-wf-tag {
   background: rgba(96, 165, 250, 0.16);
   color: #93c5fd;
+}
+
+/* ```list — a list of ideas, one row each, with a colored left rail (styled
+   like the files block). Hover highlight, no export buttons (Sprint 60). */
+.markdown-body .md-list {
+  margin: 0.7rem 0;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 10px;
+  overflow: hidden;
+  background: #ffffff;
+}
+html.dark .markdown-body .md-list {
+  border-color: rgba(255, 255, 255, 0.14);
+  background: #171e29;
+}
+.markdown-body .md-list-row {
+  --c: #94a3b8;
+  padding: 0.55rem 0.8rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  border-left: 3px solid var(--c);
+  font-size: 0.9rem;
+  line-height: 1.45;
+  transition: background 0.12s ease;
+}
+html.dark .markdown-body .md-list-row {
+  border-bottom-color: rgba(255, 255, 255, 0.07);
+}
+.markdown-body .md-list-row:last-child {
+  border-bottom: 0;
+}
+.markdown-body .md-list-row:hover {
+  background: color-mix(in srgb, var(--c) 9%, transparent);
+}
+/* Optional description row beneath an idea. */
+.markdown-body .md-list-desc {
+  margin-top: 0.15rem;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: rgba(0, 0, 0, 0.55);
+}
+html.dark .markdown-body .md-list-desc {
+  color: rgba(255, 255, 255, 0.55);
+}
+.markdown-body .md-list-desc code {
+  font-size: 0.75rem;
 }
 
 .markdown-body .md-lettering {

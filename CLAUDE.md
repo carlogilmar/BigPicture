@@ -411,7 +411,18 @@ numbered, applied at startup. To add one:
 4. Run `pnpm tauri dev` once to confirm migrations apply cleanly on
    your machine.
 
-Last updated: end of Sprint 59 (Backend PR blocks — four more powered-markdown blocks in
+Last updated: end of Sprint 60 (Workflow card · slash categories · ```list block —
+(1) ```workflow [title] (`renderWorkflow`) now renders in a CARD (`.md-workflow-block`) with a
+fence-info header defaulting to "Workflow" + step count, a per-step hover, and a 📷 PNG copy
+button (via `withImgCopy`, no GIF). (2) SlashMenu commands gained a `cat` field + are grouped
+under headers in menu order (Basic · Lists & ideas · PR blocks · Charts & visuals) via a
+`.slash-cat` header rendered on category change; filter/keyboard nav unchanged. (3) NEW ```list
+(`renderList`) — a non-workflow list of ideas styled like the files block (container card, rows
+split by a hairline, colored left rail). Per line `idea [— description] [- <color>]`: trailing
+` - <color>` (NAMED_COLORS) tints the rail (default gray), optional ` — `/` -- `/` # ` adds a
+muted description row; title+desc take inline markdown; hover tints the row; NO export buttons.
+Slash "List of ideas" (Lists & ideas) + FormattingHelp row. svelte-check + build pass. See
+documentation/SPRINT60.md. — earlier: Sprint 59 (Backend PR blocks — four more powered-markdown blocks in
 `$lib/markdownit.ts`, each with a header from the FENCE INFO (shared `blockHeader`→`.md-bhead`,
 not a `heading:` body line), a PNG copy button, and a GIF export button where there's motion.
 ```terminal [title] [animated] (`renderTerminal`): console window, fence info = title bar, `$`
