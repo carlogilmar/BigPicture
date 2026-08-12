@@ -76,6 +76,8 @@
     "\n```compare Batched read\nSELECT * FROM todos WHERE list_id = ?;\n---\nSELECT id, title FROM todos\nWHERE list_id IN (?, ?, ?) AND archived = 0;\n```\n";
   const LIST =
     "\n```list\nFirst idea — an optional description - violet\nSecond idea - teal\nThird idea\n```\n";
+  const BLUEPRINT =
+    "\n```blueprint Request flow\nClient: sends request - blue\nAPI: validates & routes - violet\nDB: reads rows - teal\nClient -> API -> DB\n```\n";
 
   // Grouped by `cat` (the array order == menu order, so category headers appear
   // when the category changes).
@@ -108,6 +110,7 @@
     { id: "flow", label: "Flow / pipeline", icon: "⇥", cat: "PR blocks", keywords: "flow pipeline sequence request trace steps diagram", snippet: FLOW },
     { id: "compare", label: "Before / after", icon: "⇄", cat: "PR blocks", keywords: "compare before after diff old new change crossfade", snippet: COMPARE },
     // — Charts & visuals —
+    { id: "blueprint", label: "Blueprint (diagram)", icon: "🗺", cat: "Charts & visuals", keywords: "blueprint diagram nodes boxes graph connect arrows dsl", snippet: BLUEPRINT },
     { id: "diagram", label: "Diagram", icon: "📈", cat: "Charts & visuals", keywords: "mermaid flowchart graph", snippet: MERMAID },
     { id: "cards", label: "Cards", icon: "▤", cat: "Charts & visuals", keywords: "dashboard links tiles heading section", snippet: CARDS },
     { id: "bar-chart", label: "Bar chart", icon: "▊", cat: "Charts & visuals", keywords: "chart graph bar data viz", snippet: BAR_CHART },

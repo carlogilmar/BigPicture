@@ -148,6 +148,10 @@ export function createMarkdownIt(): MarkdownIt {
     if (info === "compare" || info.startsWith("compare ")) {
       return renderCompare(tokens[idx].content, rawInfo.slice(7).trim(), md);
     }
+    // ```blueprint [title] → a small node-graph diagram from the import DSL.
+    if (info === "blueprint" || info.startsWith("blueprint ")) {
+      return renderBlueprint(tokens[idx].content, rawInfo.slice(9).trim(), md);
+    }
     // Every other fenced block gets a GitHub-style copy button. The button is
     // static HTML (no per-instance handler survives `{@html}` re-renders); a
     // single delegated document listener — installCodeCopy — handles the click
@@ -210,15 +214,18 @@ export function createMarkdownIt(): MarkdownIt {
   return md;
 }
 
-// Collapsible "toggle" sections. A heading whose text starts with `>` (e.g.
-// `## > Roadmap`) becomes a <details> section, COLLAPSED by default, whose body
-// is every block down to the next heading of the same-or-higher level. Opt-in
-// by the marker, so plain headings and existing notes are untouched.
+// Collapsible "toggle" sections. A heading whose text starts with `>` becomes a
+// <details> section whose body is every block down to the next heading of the
+// same-or-higher level. `## > Title` is COLLAPSED, `## >> Title` is OPEN — the
+// open/closed status lives in the source, so clicking the header flips the
+// marker (see toggleSectionInSource) and it survives edit → view. Each section
+// carries a `data-section` document-order index so the click can find its line.
 function addCollapsibleSections(md: MarkdownIt): void {
   md.core.ruler.push("collapsible_sections", (state) => {
     const src = state.tokens;
     const out: typeof src = [];
     const stack: number[] = []; // levels of currently-open toggle sections
+    let sectionIdx = 0;
 
     const closeThrough = (level: number) => {
       while (stack.length && stack[stack.length - 1] >= level) {
@@ -238,14 +245,20 @@ function addCollapsibleSections(md: MarkdownIt): void {
         // A new heading closes any open section at its level or deeper.
         closeThrough(level);
         const inline = src[i + 1];
-        if (/^>\s?/.test(inline.content)) {
-          // Strip the `>` marker from the rendered heading text.
-          inline.content = inline.content.replace(/^>\s?/, "");
+        const m = /^(>>?)\s?/.exec(inline.content);
+        if (m) {
+          const isOpen = m[1] === ">>";
+          // Strip the `>` / `>>` marker from the rendered heading text.
+          inline.content = inline.content.replace(/^>>?\s?/, "");
           const first = inline.children?.[0];
           if (first && first.type === "text") {
-            first.content = first.content.replace(/^>\s?/, "");
+            first.content = first.content.replace(/^>>?\s?/, "");
           }
-          out.push(new state.Token("section_open", "", 1));
+          const so = new state.Token("section_open", "", 1);
+          so.attrSet("data-section", String(sectionIdx));
+          if (isOpen) so.attrSet("data-open", "1");
+          sectionIdx++;
+          out.push(so);
           out.push(tok, inline, src[i + 2]);
           out.push(new state.Token("section_body_open", "", 0));
           stack.push(level);
@@ -261,17 +274,23 @@ function addCollapsibleSections(md: MarkdownIt): void {
     state.tokens = out;
   });
 
-  md.renderer.rules.section_open = () =>
-    '<details class="md-section"><summary class="md-section-sum">';
+  md.renderer.rules.section_open = (tokens, idx) => {
+    const t = tokens[idx];
+    const i = t.attrGet("data-section") ?? "0";
+    const open = t.attrGet("data-open") ? " open" : "";
+    return `<details class="md-section"${open}><summary class="md-section-sum" data-section="${i}">`;
+  };
   md.renderer.rules.section_body_open = () =>
     '</summary><div class="md-section-body">';
   md.renderer.rules.section_close = () => "</div></details>";
 }
 
 // Native <details> toggling is intercepted here (capture phase) so a click on a
-// section header toggles it WITHOUT tripping a surface's click-to-edit, and so
-// the behaviour is identical across every markdown surface. A link inside the
-// heading is left alone so it can navigate.
+// section header toggles it WITHOUT tripping a surface's click-to-edit. This is
+// the EPHEMERAL toggle for read-only surfaces (blueprint cards, flashcards). An
+// editor preview marked `[data-md-sections="persist"]` handles its own clicks
+// (it writes the open/closed status back to the source), so we bail there and
+// let the click bubble to the editor. A link inside the heading is left alone.
 let sectionToggleInstalled = false;
 function installSectionToggle(): void {
   if (sectionToggleInstalled || typeof document === "undefined") return;
@@ -283,6 +302,7 @@ function installSectionToggle(): void {
       const sum = target?.closest?.(".md-section-sum") as HTMLElement | null;
       if (!sum) return;
       if (target?.closest?.("a")) return; // let links navigate
+      if (sum.closest('[data-md-sections="persist"]')) return; // editor persists
       e.stopPropagation();
       e.preventDefault();
       const details = sum.closest(
@@ -292,6 +312,31 @@ function installSectionToggle(): void {
     },
     true,
   );
+}
+
+// Flip the Nth toggle-section marker (`## > ` ↔ `## >> `, document order) in
+// raw markdown source, persisting its open/closed status. Skips fenced code so
+// a literal `## > ` inside a code block isn't counted. Mirrors
+// toggleTaskInSource; returns the new source, or null if the index wasn't found.
+export function toggleSectionInSource(src: string, index: number): string | null {
+  const lines = src.split("\n");
+  let inFence = false;
+  let count = 0;
+  for (let i = 0; i < lines.length; i++) {
+    if (/^\s*(```|~~~)/.test(lines[i])) {
+      inFence = !inFence;
+      continue;
+    }
+    if (inFence) continue;
+    const m = /^(\s*#{1,6}\s+)(>>?)(.*)$/.exec(lines[i]);
+    if (!m) continue;
+    if (count === index) {
+      lines[i] = m[1] + (m[2] === ">>" ? ">" : ">>") + m[3];
+      return lines.join("\n");
+    }
+    count++;
+  }
+  return null;
 }
 
 // Set `data-line="<0-based source line>"` on every top-level block token that
@@ -930,6 +975,183 @@ function renderCompare(source: string, title: string, md: MarkdownIt): string {
       `<div class="md-cmp-layer md-cmp-after"><span class="md-cmp-tag">After</span><pre>${esc(after)}</pre></div>` +
       `</div></div>`,
     { gif: true },
+  );
+}
+
+// ```blueprint [title] → a SMALL node-graph diagram (the Blueprint import DSL,
+// rendered inline). Lines:
+//   Name: short description   → a box (title + optional desc)
+//   A -> B -> C               → edges (undefined names auto-create nodes)
+// Auto-laid-out into left→right layers (longest-path), drawn as pure SVG boxes +
+// animated dashed arrows. PNG-copyable; big diagrams still belong in Blueprints.
+let bpSeq = 0;
+function renderBlueprint(source: string, title: string, md: MarkdownIt): string {
+  const esc = (s: string) => md.utils.escapeHtml(s);
+  const order: string[] = [];
+  const nodes = new Map<
+    string,
+    { title: string; desc: string; color: string }
+  >();
+  const edges: { from: string; to: string }[] = [];
+  const ensure = (raw: string): string => {
+    const n = raw.trim();
+    if (!n) return "";
+    if (!nodes.has(n)) {
+      nodes.set(n, { title: n, desc: "", color: "" });
+      order.push(n);
+    }
+    return n;
+  };
+  for (const line of source.split("\n")) {
+    const t = line.trim();
+    if (!t) continue;
+    if (t.includes("->")) {
+      const parts = t.split(/->+/).map((p) => p.trim()).filter(Boolean);
+      let prev = "";
+      for (const p of parts) {
+        const n = ensure(p);
+        if (prev && n) edges.push({ from: prev, to: n });
+        prev = n;
+      }
+      continue;
+    }
+    // A node line: `Name: description [- color]`.
+    let body = t;
+    let color = "";
+    const cm = /\s+-\s+([a-zA-Z]+)\s*$/.exec(body);
+    if (cm && NAMED_COLORS[cm[1].toLowerCase()]) {
+      color = NAMED_COLORS[cm[1].toLowerCase()];
+      body = body.slice(0, cm.index).trim();
+    }
+    const c = body.indexOf(":");
+    const n = ensure(c >= 0 ? body.slice(0, c) : body);
+    const rec = nodes.get(n);
+    if (rec) {
+      const desc = c >= 0 ? body.slice(c + 1).trim() : "";
+      if (desc && !rec.desc) rec.desc = desc;
+      if (color) rec.color = color;
+    }
+  }
+  if (nodes.size === 0) return "";
+
+  // Longest-path layering (Kahn). Cycle leftovers fall back to layer 0.
+  const adj = new Map<string, string[]>();
+  const indeg = new Map<string, number>();
+  for (const n of order) {
+    adj.set(n, []);
+    indeg.set(n, 0);
+  }
+  for (const e of edges) {
+    adj.get(e.from)?.push(e.to);
+    indeg.set(e.to, (indeg.get(e.to) ?? 0) + 1);
+  }
+  const layer = new Map<string, number>();
+  const q = order.filter((n) => (indeg.get(n) ?? 0) === 0);
+  for (const n of q) layer.set(n, 0);
+  const left = new Map(indeg);
+  for (let h = 0; h < q.length; h++) {
+    const n = q[h];
+    for (const m of adj.get(n) ?? []) {
+      layer.set(m, Math.max(layer.get(m) ?? 0, (layer.get(n) ?? 0) + 1));
+      left.set(m, (left.get(m) ?? 0) - 1);
+      if ((left.get(m) ?? 0) === 0) q.push(m);
+    }
+  }
+  const byLayer = new Map<number, string[]>();
+  let maxLayer = 0;
+  for (const n of order) {
+    const L = layer.get(n) ?? 0;
+    if (!byLayer.has(L)) byLayer.set(L, []);
+    byLayer.get(L)!.push(n);
+    maxLayer = Math.max(maxLayer, L);
+  }
+
+  const BW = 178;
+  const BH = 62;
+  const GX = 66;
+  const GY = 26;
+  const PAD = 18;
+  let maxCount = 1;
+  for (let L = 0; L <= maxLayer; L++)
+    maxCount = Math.max(maxCount, (byLayer.get(L) ?? []).length);
+  const contentH = maxCount * BH + (maxCount - 1) * GY;
+  const contentW = (maxLayer + 1) * BW + maxLayer * GX;
+  const W = contentW + PAD * 2;
+  const H = contentH + PAD * 2;
+
+  const pos = new Map<string, { x: number; y: number }>();
+  for (let L = 0; L <= maxLayer; L++) {
+    const nl = byLayer.get(L) ?? [];
+    const layerH = nl.length * BH + (nl.length - 1) * GY;
+    const yStart = PAD + (contentH - layerH) / 2;
+    const x = PAD + L * (BW + GX);
+    nl.forEach((n, i) => pos.set(n, { x, y: yStart + i * (BH + GY) }));
+  }
+
+  // Edges: an SVG layer behind the cards (animated dashed, arrow at the target).
+  const arrow = `md-bp-arrow-${bpSeq++}`;
+  const edgeSvg = edges
+    .map((e) => {
+      const a = pos.get(e.from);
+      const b = pos.get(e.to);
+      if (!a || !b) return "";
+      const x1 = a.x + BW;
+      const y1 = a.y + BH / 2;
+      const x2 = b.x;
+      const y2 = b.y + BH / 2;
+      const dx = Math.max(24, Math.abs(x2 - x1) * 0.5);
+      return `<path class="md-bp-edge" marker-end="url(#${arrow})" d="M${x1} ${y1} C ${x1 + dx} ${y1}, ${x2 - dx} ${y2}, ${x2} ${y2}"/>`;
+    })
+    .join("");
+  const edgeLayer =
+    `<svg class="md-bp-edges" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">` +
+    `<defs><marker id="${arrow}" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z"/></marker></defs>` +
+    `${edgeSvg}</svg>`;
+  // Nodes: HTML cards (left accent bar + shadow + centered title) like Blueprints.
+  const nodeHtml = order
+    .map((n) => {
+      const p = pos.get(n)!;
+      const rec = nodes.get(n)!;
+      const accent = rec.color || "#64748b";
+      return (
+        `<div class="md-bp-node" style="left:${p.x}px;top:${p.y}px;width:${BW}px;height:${BH}px;--bp-accent:${accent}">` +
+        `<div class="md-bp-t">${esc(rec.title)}</div>` +
+        (rec.desc ? `<div class="md-bp-d">${esc(rec.desc)}</div>` : "") +
+        `</div>`
+      );
+    })
+    .join("");
+  // Connection handles: a small dot wherever an edge meets a card (source
+  // right / target left), on a layer ABOVE the cards so they sit on the border.
+  const dotSet = new Set<string>();
+  for (const e of edges) {
+    const a = pos.get(e.from);
+    const b = pos.get(e.to);
+    if (!a || !b) continue;
+    dotSet.add(`${a.x + BW},${a.y + BH / 2}`);
+    dotSet.add(`${b.x},${b.y + BH / 2}`);
+  }
+  const dotsLayer = dotSet.size
+    ? `<svg class="md-bp-dots" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">` +
+      [...dotSet]
+        .map((p) => {
+          const [x, y] = p.split(",");
+          return `<circle class="md-bp-dot" cx="${x}" cy="${y}" r="4"/>`;
+        })
+        .join("") +
+      `</svg>`
+    : "";
+  const scene = `<div class="md-bp-scene" style="width:${W}px;height:${H}px">${edgeLayer}${nodeHtml}${dotsLayer}</div>`;
+  const bar = title
+    ? blockHeader(
+        title,
+        "",
+        `${nodes.size} node${nodes.size === 1 ? "" : "s"}`,
+        md,
+      )
+    : "";
+  return withImgCopy(
+    `<div class="md-blueprint">${bar}<div class="md-bp-canvas">${scene}</div></div>`,
   );
 }
 

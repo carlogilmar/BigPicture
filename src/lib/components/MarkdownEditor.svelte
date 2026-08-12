@@ -10,6 +10,7 @@
     countWords,
     toggleTaskInSource,
     stepProgressInSource,
+    toggleSectionInSource,
   } from "$lib/markdownit";
   import EntityLinkPicker from "$lib/components/EntityLinkPicker.svelte";
   import SlashMenu from "$lib/components/SlashMenu.svelte";
@@ -243,6 +244,16 @@
       if (Number.isFinite(idx)) void stepProgress(idx, delta);
       return;
     }
+    // Collapsible section header: flip the `>`/`>>` marker in the source and
+    // persist (so the open/closed status survives edit → view). A link inside
+    // the heading falls through to the anchor handling below.
+    const sumEl = target.closest<HTMLElement>(".md-section-sum");
+    if (sumEl && sumEl.dataset.section !== undefined && !target.closest("a")) {
+      e.preventDefault();
+      const idx = Number(sumEl.dataset.section);
+      if (Number.isFinite(idx)) void toggleSection(idx);
+      return;
+    }
     const anchor = target.closest("a");
     if (anchor) {
       e.preventDefault();
@@ -285,6 +296,15 @@
 
   async function stepProgress(idx: number, delta: number) {
     const next = stepProgressInSource(draft, idx, delta);
+    if (next === null) return;
+    draft = next;
+    await onCommit(next);
+  }
+
+  async function toggleSection(idx: number) {
+    // Flip the section's `>`/`>>` marker in the source and persist, so the
+    // open/closed status survives an edit → view round-trip.
+    const next = toggleSectionInSource(draft, idx);
     if (next === null) return;
     draft = next;
     await onCommit(next);
@@ -604,6 +624,7 @@
     <div
       bind:this={previewEl}
       role="presentation"
+      data-md-sections="persist"
       style="min-height: {minHeight};"
       class="markdown-body w-full overflow-x-hidden rounded-md px-3 py-2 text-sm leading-relaxed text-neutral-800 dark:text-neutral-200"
       onclick={onPreviewClick}

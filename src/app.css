@@ -454,57 +454,80 @@ html.dark .markdown-body .md-cards-panel {
 
 /* Collapsible "toggle" sections — `## > Title` (Sprint 55). Collapsed by
    default; native <details>, toggled via installSectionToggle. */
+/* Boxed card; the toggle button is a CENTERED Oswald title (lettering style)
+   with a `+` icon below it that becomes `−` when open. */
 .markdown-body .md-section {
-  margin: 0.5rem 0;
-  border: 1px solid rgba(0, 0, 0, 0.09);
+  margin: 0.6rem 0;
+  border: 1px solid rgba(0, 0, 0, 0.12);
   border-radius: 10px;
   overflow: hidden;
-  background: color-mix(in srgb, currentColor 3%, transparent);
+  background: #ffffff;
 }
 html.dark .markdown-body .md-section {
-  border-color: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.14);
+  background: #171e29;
 }
 .markdown-body .md-section-sum {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 0.55rem;
-  padding: 0.1rem 0.7rem;
+  justify-content: center;
+  padding: 0.45rem 1.8rem;
+  background: #24272d;
+  color: #ffffff;
   cursor: pointer;
   list-style: none;
   user-select: none;
+  transition: background 0.12s ease;
+}
+.markdown-body .md-section-sum:hover {
+  background: #2e323a;
 }
 .markdown-body .md-section-sum::-webkit-details-marker {
   display: none;
 }
-/* Disclosure triangle, rotates when open. */
-.markdown-body .md-section-sum::before {
-  content: "";
-  flex: none;
-  width: 0;
-  height: 0;
-  border-left: 6px solid currentColor;
-  border-top: 4px solid transparent;
-  border-bottom: 4px solid transparent;
-  opacity: 0.45;
-  transition: transform 0.15s ease;
-}
-.markdown-body .md-section[open] > .md-section-sum::before {
-  transform: rotate(90deg);
-}
-.markdown-body .md-section-sum:hover::before {
-  opacity: 0.8;
-}
-/* The heading inside the summary: drop its default block margins / h1 rule. */
+/* The heading — small, centered Oswald label (like the lettering block). */
 .markdown-body .md-section-sum > :where(h1, h2, h3, h4, h5, h6) {
   margin: 0;
   border: 0;
-  padding: 0.3rem 0;
+  padding: 0;
+  font-family: "Oswald", var(--font-sans);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  text-align: center;
+  line-height: 1.25;
+  font-size: 0.78rem;
 }
+/* Subtle chevron on the right; points down closed, up when open. */
+.markdown-body .md-section-sum::after {
+  content: "";
+  position: absolute;
+  right: 0.95rem;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  opacity: 0.5;
+  transform: translateY(-70%) rotate(45deg);
+  transition:
+    transform 0.18s ease,
+    opacity 0.12s ease;
+}
+.markdown-body .md-section-sum:hover::after {
+  opacity: 0.9;
+}
+.markdown-body .md-section[open] > .md-section-sum::after {
+  transform: translateY(-25%) rotate(-135deg);
+}
+/* Expanded content keeps the card's inner padding (the dark→light edge of the
+   header is the divider — no extra border needed). */
 .markdown-body .md-section-body {
-  padding: 0.1rem 0.95rem 0.55rem;
+  padding: 0.5rem 0.95rem 0.7rem;
 }
 .markdown-body .md-section-body > :first-child {
-  margin-top: 0.2rem;
+  margin-top: 0.35rem;
 }
 .markdown-body .md-section-body > :last-child {
   margin-bottom: 0;
@@ -1044,6 +1067,150 @@ html.dark .markdown-body .md-cmp-layer pre {
 .markdown-body .md-cmpon .md-cmp-after { animation: md-cmp-a 4s infinite; }
 @keyframes md-cmp-b { 0%, 42% { opacity: 1; } 50%, 92% { opacity: 0; } 100% { opacity: 1; } }
 @keyframes md-cmp-a { 0%, 42% { opacity: 0; } 50%, 92% { opacity: 1; } 100% { opacity: 0; } }
+
+/* ```blueprint — a small node-graph like the Blueprints canvas: a dot-grid,
+   HTML cards (left accent bar + shadow + centered title), animated arrows. */
+.markdown-body .md-blueprint {
+  margin: 0.7rem 0;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 10px;
+  overflow: hidden;
+  background: #ffffff;
+}
+html.dark .markdown-body .md-blueprint {
+  border-color: rgba(255, 255, 255, 0.14);
+  background: #171e29;
+}
+.markdown-body .md-bp-canvas {
+  overflow-x: auto;
+}
+/* The canvas: a dot grid, like the Blueprint editor's background. Stretches to
+   fill the whole block (min-width:100%) so there are no white margins; the
+   layout's own padding keeps the cards off the edges. */
+.markdown-body .md-bp-scene {
+  position: relative;
+  min-width: 100%;
+  box-sizing: border-box;
+  background-color: #fbfbfc;
+  background-image: radial-gradient(
+    circle,
+    rgba(0, 0, 0, 0.14) 1px,
+    transparent 1.4px
+  );
+  background-size: 16px 16px;
+}
+html.dark .markdown-body .md-bp-scene {
+  background-color: #10151f;
+  background-image: radial-gradient(
+    circle,
+    rgba(255, 255, 255, 0.13) 1px,
+    transparent 1.4px
+  );
+}
+/* Pinned top-left at its natural W×H so the viewBox maps 1:1 to the cards'
+   pixel positions (stretching would scale + misalign the arrows). */
+.markdown-body .md-bp-edges {
+  position: absolute;
+  left: 0;
+  top: 0;
+  overflow: visible;
+  z-index: 0;
+}
+.markdown-body .md-bp-edge {
+  fill: none;
+  stroke: #64748b;
+  stroke-width: 2;
+  stroke-dasharray: 6 4;
+  animation: md-bp-march 0.5s linear infinite;
+}
+html.dark .markdown-body .md-bp-edge {
+  stroke: #94a3b8;
+}
+.markdown-body .md-bp-edges marker path {
+  fill: #64748b;
+}
+html.dark .markdown-body .md-bp-edges marker path {
+  fill: #94a3b8;
+}
+@keyframes md-bp-march {
+  to {
+    stroke-dashoffset: -20;
+  }
+}
+/* Connection handles — dots on the card border where an edge attaches. */
+.markdown-body .md-bp-dots {
+  position: absolute;
+  left: 0;
+  top: 0;
+  overflow: visible;
+  z-index: 2;
+  pointer-events: none;
+}
+.markdown-body .md-bp-dot {
+  fill: #64748b;
+  stroke: #ffffff;
+  stroke-width: 1.5;
+}
+html.dark .markdown-body .md-bp-dot {
+  fill: #94a3b8;
+  stroke: #1b2333;
+}
+/* Card node — mirrors the Blueprint card: accent left bar, shadow, bold
+   centered title, muted description (clamped to 2 lines). */
+.markdown-body .md-bp-node {
+  position: absolute;
+  z-index: 1;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 7px 11px 7px 12px;
+  border-radius: 8px;
+  border-left: 4px solid var(--bp-accent, #64748b);
+  background: #ffffff;
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.08),
+    0 0 0 1px rgba(0, 0, 0, 0.07);
+  text-align: center;
+  overflow: hidden;
+}
+html.dark .markdown-body .md-bp-node {
+  background: #1b2333;
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+.markdown-body .md-bp-t {
+  font: 650 15px/1.2 system-ui, sans-serif;
+  letter-spacing: -0.01em;
+  color: #171717;
+  word-break: break-word;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+html.dark .markdown-body .md-bp-t {
+  color: #e5e5e5;
+}
+.markdown-body .md-bp-d {
+  margin-top: 3px;
+  font: 400 11.5px/1.35 system-ui, sans-serif;
+  color: #171717;
+  opacity: 0.78;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+html.dark .markdown-body .md-bp-d {
+  color: #e5e5e5;
+}
+@media (prefers-reduced-motion: reduce) {
+  .markdown-body .md-bp-edge {
+    animation: none;
+  }
+}
 
 /* Capture hooks — during a GIF export the block gets `.md-cap`; live CSS
    animations are frozen and each frame's state is driven from JS. */

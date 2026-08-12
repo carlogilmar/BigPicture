@@ -411,7 +411,25 @@ numbered, applied at startup. To add one:
 4. Run `pnpm tauri dev` once to confirm migrations apply cleanly on
    your machine.
 
-Last updated: end of Sprint 60 (Workflow card · slash categories · ```list block —
+Last updated: end of Sprint 61 (Blueprint block · collapsible-section overhaul · task notes.
+NEW ```blueprint [title] (`renderBlueprint`): the Blueprint import DSL rendered inline as a small
+static diagram that LOOKS like the Blueprints canvas — `Name: desc [- color]` → a card, `A -> B
+-> C` → edges (auto-create nodes); longest-path (Kahn) left→right layout; a DOT-GRID scene
+(`.md-bp-scene`, `min-width:100%` fills the block) with HTML cards (left accent bar + shadow +
+bold centered title + 2-line desc, like `BlueprintCardNode`) over an SVG edge layer (animated
+dashed arrows, pinned top-left so viewBox maps 1:1 to card px); connection-handle dots on the card
+border where edges attach; per-card `- <color>`; PNG copy, NO GIF. Slash "Blueprint (diagram)"
+(Charts & visuals) + FormattingHelp. COLLAPSIBLE SECTIONS restyled + made PERSISTENT: single card
+w/ a DARK BAR header (small centered Oswald title + chevron); the open/closed status now lives in
+the SOURCE — `## >` collapsed / `## >>` open — each `<summary>` has a `data-section` index and
+`toggleSectionInSource` flips the marker (mirrors `toggleTaskInSource`); MarkdownEditor's preview
+is `[data-md-sections="persist"]` and handles the click (flip+save) while the global
+`installSectionToggle` bails there (ephemeral toggle stays for read-only surfaces) — so expand →
+edit → back keeps it open (survives restart). TASK NOTES (`Inspector.svelte`): the description uses
+the notes locked floating-edit (`floatingEdit` + new `floatingContained` prop anchoring the FAB to
+the modal via `absolute` vs `fixed`); modal widened `max-w-2xl`→`max-w-4xl`. ```list gained an
+optional ` — description` row per idea. svelte-check + build pass. See documentation/SPRINT61.md.
+— earlier: Sprint 60 (Workflow card · slash categories · ```list block —
 (1) ```workflow [title] (`renderWorkflow`) now renders in a CARD (`.md-workflow-block`) with a
 fence-info header defaulting to "Workflow" + step count, a per-step hover, and a 📷 PNG copy
 button (via `withImgCopy`, no GIF). (2) SlashMenu commands gained a `cat` field + are grouped
