@@ -1638,7 +1638,7 @@ class AppStore {
   // ---- Generic "new entity" used by the sidebar's Add modal ----
 
   async newEntity(
-    kind: "note" | "flashcard" | "blueprint" | "storyboard",
+    kind: "note" | "flashcard" | "blueprint" | "storyboard" | "board",
     title: string,
   ) {
     const t = title.trim();
@@ -1650,6 +1650,8 @@ class AppStore {
       await this.newFlashcard(t || "New card");
     } else if (kind === "blueprint") {
       await this.newBlueprint(t || "New blueprint");
+    } else if (kind === "board") {
+      await this.newFeedbackBoard(t || "New board");
     } else {
       await this.newStoryboard(t || "Untitled storyboard");
     }

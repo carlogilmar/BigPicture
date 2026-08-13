@@ -5,7 +5,8 @@
     | "note"
     | "flashcard"
     | "blueprint"
-    | "storyboard";
+    | "storyboard"
+    | "board";
   type Props = { onClose: () => void };
   let { onClose }: Props = $props();
 
@@ -22,6 +23,7 @@
     { value: "note", label: "Note", hue: 217, hint: "Daily markdown note" },
     { value: "flashcard", label: "Flashcard", hue: 175, hint: "A card in your Flash Deck" },
     { value: "blueprint", label: "Blueprint", hue: 200, hint: "A design canvas for planning software" },
+    { value: "board", label: "Board", hue: 175, hint: "A feedback kanban with columns + cards" },
     { value: "storyboard", label: "Storyboard", hue: 158, hint: "Tiny diagram + note, page by page" },
   ];
 

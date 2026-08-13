@@ -181,7 +181,14 @@
   }
 </script>
 
-<div class="flex h-full flex-col">
+<!-- The empty (picker) state borrows the sidebar tint (same mechanism as the
+     Sidebar / Home Today card) so the tint picker themes it too; once a
+     reference is shown it reverts to the normal surface. -->
+<div
+  class="flex h-full flex-col text-neutral-700 dark:text-neutral-100"
+  class:dark={!app.splitRef && theme.isSidebarDark}
+  style={!app.splitRef ? "background: var(--sidebar-bg)" : ""}
+>
   <!-- pane header -->
   <header
     class="flex h-10 shrink-0 items-center gap-2 border-b border-neutral-200/70 px-3 dark:border-neutral-700/70"
@@ -223,8 +230,29 @@
 
   <div class="min-h-0 flex-1 overflow-y-auto">
     {#if !app.splitRef}
-      <!-- picker: search + recents -->
+      <!-- picker: hero + search + recents -->
       <div class="p-3">
+        <div class="flex flex-col items-center px-4 pb-5 pt-9 text-center">
+          <div
+            class="mb-4 flex h-24 w-24 items-center justify-center rounded-3xl bg-black/5 text-neutral-500 dark:bg-white/10 dark:text-neutral-300"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" class="h-12 w-12">
+              <rect x="3" y="4.5" width="18" height="15" rx="2.5" />
+              <line x1="13.5" y1="4.5" x2="13.5" y2="19.5" />
+              <line x1="16" y1="9" x2="19" y2="9" />
+              <line x1="16" y1="12" x2="19" y2="12" />
+            </svg>
+          </div>
+          <h3
+            class="text-2xl font-bold uppercase tracking-wide"
+            style="font-family: 'Oswald', var(--font-sans)"
+          >
+            Reference pane
+          </h3>
+          <p class="mt-1.5 max-w-[16rem] text-xs leading-relaxed text-neutral-500 dark:text-neutral-400">
+            Keep a note, blueprint or board open here while you edit in the main pane.
+          </p>
+        </div>
         <input
           bind:value={query}
           placeholder="Search notes, blueprints, boards…"
