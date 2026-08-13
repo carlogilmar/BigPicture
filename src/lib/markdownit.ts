@@ -6,6 +6,7 @@ import MarkdownIt from "markdown-it";
 import { hierarchy, treemap, treemapSquarify } from "d3-hierarchy";
 import { iconByShortcode, iconInlineSvg } from "$lib/storyIcons";
 import { cardAccent } from "$lib/cardColors";
+import { tagHue } from "$lib/badges";
 import type { FeedbackColumn, FeedbackCardSummary } from "$lib/ipc";
 import { renderMermaid } from "$lib/mermaid";
 import hljs from "highlight.js/lib/core";
@@ -153,6 +154,15 @@ export function createMarkdownIt(): MarkdownIt {
     // ```blueprint [title] → a small node-graph diagram from the import DSL.
     if (info === "blueprint" || info.startsWith("blueprint ")) {
       return renderBlueprint(tokens[idx].content, rawInfo.slice(9).trim(), md);
+    }
+    // ```links [title] → a "related items" list of internal entity links
+    // ([label](note:5) etc.), one per line, rendered as icon+title+kind rows.
+    if (info === "links" || info.startsWith("links ")) {
+      return renderLinks(tokens[idx].content, rawInfo.slice(5).trim(), md);
+    }
+    // ```linkchips [title] → the same links rendered as compact "see also" pills.
+    if (info === "linkchips" || info.startsWith("linkchips ")) {
+      return renderLinkChips(tokens[idx].content, rawInfo.slice(9).trim(), md);
     }
     // Every other fenced block gets a GitHub-style copy button. The button is
     // static HTML (no per-instance handler survives `{@html}` re-renders); a
@@ -1160,6 +1170,139 @@ function renderBlueprint(source: string, title: string, md: MarkdownIt): string 
   );
 }
 
+// ```links / ```linkchips — a list of internal entity links rendered as a
+// distinct "related items" component instead of a stack of plain link buttons.
+// Both read the same body: one markdown link per line, `[label](kind:id)` for a
+// known entity kind (an optional `- ` / `* ` / `1. ` list prefix is tolerated,
+// since these are usually authored as a bullet list), or `[label](https://…)`
+// for an external URL. Labels are authored inline so no store/IPC lookup is
+// needed — this renders synchronously like the other powered blocks. The anchors
+// reuse the editors' existing entity-link click handling (see MarkdownEditor's
+// onPreviewClick + navigateEntity), so `board:` is included alongside the five
+// entity-link kinds.
+const LINK_ICONS: Record<string, string> = {
+  note:
+    '<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M5 2.5A1.5 1.5 0 003.5 4v12A1.5 1.5 0 005 17.5h10A1.5 1.5 0 0016.5 16V7.4a1.5 1.5 0 00-.44-1.06l-3.4-3.4A1.5 1.5 0 0011.6 2.5H5z"/><rect x="6.2" y="8" width="7.6" height="1.3" rx=".65" fill="#fff" opacity=".85"/><rect x="6.2" y="10.7" width="7.6" height="1.3" rx=".65" fill="#fff" opacity=".85"/><rect x="6.2" y="13.4" width="4.6" height="1.3" rx=".65" fill="#fff" opacity=".85"/></svg>',
+  blueprint:
+    '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="5" cy="6" r="2"/><circle cx="15" cy="6" r="2"/><circle cx="10" cy="15" r="2"/><path d="M6.5 7.2 8.7 13M13.5 7.2 11.3 13"/></svg>',
+  board:
+    '<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><rect x="3" y="3.5" width="3.6" height="13" rx="1.2"/><rect x="8.2" y="3.5" width="3.6" height="9" rx="1.2"/><rect x="13.4" y="3.5" width="3.6" height="11" rx="1.2"/></svg>',
+  list:
+    '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5l1.3 1.3L7.5 4.5"/><path d="M4 10.6l1.3 1.3 2.2-2.3"/><path d="M4 15.7l1.3 1.3 2.2-2.3"/><path d="M10.5 6h6M10.5 11h6M10.5 16h6"/></svg>',
+  storyboard:
+    '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="2.8" y="5" width="9" height="7" rx="1.4"/><path d="M13.6 6.2h2.2a1 1 0 011 1v6.6a1 1 0 01-1 1H7.2a1 1 0 01-1-1V13" fill="none"/></svg>',
+  flashcard:
+    '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="3" y="4.5" width="14" height="11" rx="1.8"/><path d="M3 8.2h14"/><circle cx="6" cy="6.35" r=".55" fill="currentColor" stroke="none"/></svg>',
+  link:
+    '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="10" cy="10" r="7"/><path d="M3 10h14M10 3c1.9 2 1.9 12 0 14M10 3c-1.9 2-1.9 12 0 14"/></svg>',
+};
+const LINK_KIND: Record<string, { color: string; label: string }> = {
+  note: { color: "#2563eb", label: "Note" },
+  blueprint: { color: "#7c3aed", label: "Blueprint" },
+  board: { color: "#0d9488", label: "Board" },
+  list: { color: "#16a34a", label: "List" },
+  storyboard: { color: "#db2777", label: "Storyboard" },
+  flashcard: { color: "#d97706", label: "Card" },
+};
+const LINK_GO =
+  '<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M7.3 4.8a1 1 0 000 1.4L11.1 10l-3.8 3.8a1 1 0 101.4 1.4l4.5-4.5a1 1 0 000-1.4L8.7 4.8a1 1 0 00-1.4 0z"/></svg>';
+
+type LinkRef = {
+  label: string;
+  href: string;
+  color: string;
+  kindLabel: string;
+  icon: string;
+  external: boolean;
+};
+function parseEntityLinks(source: string): LinkRef[] {
+  const out: LinkRef[] = [];
+  for (const raw of source.split("\n")) {
+    const line = raw.trim();
+    if (!line) continue;
+    // `[label](target)`, optionally prefixed by a list marker.
+    const m = /^(?:[-*]\s+|\d+[.)]\s+)?\[([^\]]+)\]\(\s*([^)\s]+)\s*\)$/.exec(
+      line,
+    );
+    if (!m) continue;
+    const label = m[1].trim();
+    const target = m[2].trim();
+    const ent = /^([a-z]+):(\d+)$/i.exec(target);
+    if (ent && LINK_KIND[ent[1].toLowerCase()]) {
+      const k = ent[1].toLowerCase();
+      const meta = LINK_KIND[k];
+      out.push({
+        label,
+        href: `${k}:${ent[2]}`,
+        color: meta.color,
+        kindLabel: meta.label,
+        icon: LINK_ICONS[k] ?? LINK_ICONS.link,
+        external: false,
+      });
+    } else if (/^https?:\/\//i.test(target)) {
+      let host = "";
+      try {
+        host = new URL(target).hostname.replace(/^www\./, "");
+      } catch {
+        /* ignore */
+      }
+      out.push({
+        label,
+        href: target,
+        color: "#64748b",
+        kindLabel: host || "Link",
+        icon: LINK_ICONS.link,
+        external: true,
+      });
+    }
+  }
+  return out;
+}
+
+// ```links [title] → a bordered "related items" list: per row, a kind-colored
+// icon tile + the label + the kind + a hover arrow. PNG-copyable.
+function renderLinks(source: string, title: string, md: MarkdownIt): string {
+  const esc = (s: string) => md.utils.escapeHtml(s);
+  const refs = parseEntityLinks(source);
+  if (refs.length === 0) return "";
+  const rows = refs
+    .map((r) => {
+      const attrs = r.external ? ' target="_blank" rel="noopener noreferrer"' : "";
+      return (
+        `<a class="md-link-row" href="${esc(r.href)}" style="--lc:${r.color}"${attrs}>` +
+        `<span class="md-link-ico">${r.icon}</span>` +
+        `<span class="md-link-label">${esc(r.label)}</span>` +
+        `<span class="md-link-kind">${esc(r.kindLabel)}</span>` +
+        `<span class="md-link-go">${LINK_GO}</span>` +
+        `</a>`
+      );
+    })
+    .join("");
+  const bar = blockHeader(title || "References", "", `${refs.length}`, md);
+  return withImgCopy(`<div class="md-links">${bar}${rows}</div>`);
+}
+
+// ```linkchips [title] → the same links as compact wrapping "see also" pills
+// (kind-colored dot + label). Lightweight/inline — no PNG button.
+function renderLinkChips(source: string, title: string, md: MarkdownIt): string {
+  const esc = (s: string) => md.utils.escapeHtml(s);
+  const refs = parseEntityLinks(source);
+  if (refs.length === 0) return "";
+  const chips = refs
+    .map((r) => {
+      const attrs = r.external ? ' target="_blank" rel="noopener noreferrer"' : "";
+      return (
+        `<a class="md-linkchip" href="${esc(r.href)}" style="--lc:${r.color}"${attrs}>` +
+        `<span class="md-linkchip-dot"></span>${esc(r.label)}</a>`
+      );
+    })
+    .join("");
+  const head = title
+    ? `<div class="md-linkchips-title">${esc(title)}</div>`
+    : "";
+  return `<div class="md-linkchips-wrap">${head}<div class="md-linkchips">${chips}</div></div>`;
+}
+
 // Minimal HTML escape for content built outside a markdown-it render pass.
 function escHtml(s: string): string {
   return s.replace(
@@ -1231,7 +1374,20 @@ function boardEmbedHtml(
             const cc = cd.commentCount
               ? `<span class="md-board-cc">${cd.commentCount}</span>`
               : "";
-            return `<div class="md-board-card"${style}><span class="md-board-card-t">${escHtml(cd.title)}</span>${cc}</div>`;
+            const tags = (cd.tags ?? "")
+              .split(/\s+/)
+              .filter(Boolean)
+              .map(
+                (t) =>
+                  `<span class="md-board-tag" style="--h:${tagHue(t)}">${escHtml(t)}</span>`,
+              )
+              .join("");
+            return (
+              `<div class="md-board-card"${style}>` +
+              `<div class="md-board-card-row"><span class="md-board-card-t">${escHtml(cd.title)}</span>${cc}</div>` +
+              (tags ? `<div class="md-board-tags">${tags}</div>` : "") +
+              `</div>`
+            );
           })
           .join("") || `<div class="md-board-empty">·</div>`;
       return (

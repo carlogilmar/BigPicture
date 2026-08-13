@@ -1,6 +1,7 @@
 <script lang="ts">
   import { app } from "$lib/stores/app.svelte";
   import { CARD_COLORS, cardAccent } from "$lib/cardColors";
+  import { tagHue } from "$lib/badges";
   import TagBadges from "$lib/components/TagBadges.svelte";
 
   type Props = { cardId: number };
@@ -10,6 +11,31 @@
   let columnName = $derived(
     app.feedbackColumns.find((col) => col.id === card?.columnId)?.name ?? "",
   );
+
+  let tagInput = $state("");
+  let cardTags = $derived((card?.tags ?? "").split(/\s+/).filter(Boolean));
+  async function addTag() {
+    const t = tagInput.trim().replace(/[#\s,]+/g, "");
+    tagInput = "";
+    if (!t || !card || cardTags.includes(t)) return;
+    await app.setFeedbackCardTags(card.id, [...cardTags, t].join(" "));
+  }
+  async function removeTag(tag: string) {
+    if (!card) return;
+    await app.setFeedbackCardTags(
+      card.id,
+      cardTags.filter((t) => t !== tag).join(" "),
+    );
+  }
+  function onTagKey(e: KeyboardEvent) {
+    if (e.key === "Enter" || e.key === "," || e.key === " ") {
+      e.preventDefault();
+      void addTag();
+    } else if (e.key === "Backspace" && tagInput === "" && cardTags.length) {
+      e.preventDefault();
+      void removeTag(cardTags[cardTags.length - 1]);
+    }
+  }
 
   async function setColor(name: string | null) {
     if (!card) return;
@@ -215,6 +241,33 @@
       </div>
 
       <h3 class="mb-1.5 text-xs font-medium uppercase tracking-widest text-neutral-400 dark:text-neutral-500">
+        Tags
+      </h3>
+      <div class="mb-5 flex flex-wrap items-center gap-1.5">
+        {#each cardTags as t (t)}
+          <span
+            class="tag-chip inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium leading-none"
+            style="--h: {tagHue(t)}"
+          >
+            {t}
+            <button
+              type="button"
+              class="opacity-60 hover:opacity-100"
+              aria-label={`Remove ${t}`}
+              onclick={() => removeTag(t)}>×</button
+            >
+          </span>
+        {/each}
+        <input
+          bind:value={tagInput}
+          onkeydown={onTagKey}
+          onblur={addTag}
+          placeholder={cardTags.length ? "add…" : "Add tags — Enter or space"}
+          class="min-w-[7rem] flex-1 rounded-md border border-neutral-200/70 bg-white/70 px-2 py-1 text-xs outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-500/20 dark:border-neutral-700/70 dark:bg-neutral-900/40"
+        />
+      </div>
+
+      <h3 class="mb-1.5 text-xs font-medium uppercase tracking-widest text-neutral-400 dark:text-neutral-500">
         Description
       </h3>
       {#if editingDesc}
@@ -300,3 +353,14 @@
     </footer>
   </aside>
 {/if}
+
+<style>
+  .tag-chip {
+    background: hsl(var(--h) 70% 50% / 0.16);
+    color: hsl(var(--h) 60% 38%);
+  }
+  :global(html.dark) .tag-chip {
+    background: hsl(var(--h) 60% 60% / 0.22);
+    color: hsl(var(--h) 70% 72%);
+  }
+</style>

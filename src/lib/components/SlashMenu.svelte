@@ -79,6 +79,10 @@
   const BLUEPRINT =
     "\n```blueprint Request flow\nClient: sends request - blue\nAPI: validates & routes - violet\nDB: reads rows - teal\nClient -> API -> DB\n```\n";
   const BOARD = "\n{{board 1}}\n";
+  const LINKS =
+    "\n```links Related\n[Weather Pipeline Blueprint](blueprint:1)\n[Message Operations Decoupling](note:21)\n[Weather Pipeline 1st PR Testing Notes](note:24)\n```\n";
+  const LINKCHIPS =
+    "\n```linkchips See also\n[Weather Pipeline Blueprint](blueprint:1)\n[Message Operations Decoupling](note:21)\n```\n";
 
   // Grouped by `cat` (the array order == menu order, so category headers appear
   // when the category changes).
@@ -102,6 +106,8 @@
     { id: "todo", label: "Checklist", icon: "☑", cat: "Lists & ideas", keywords: "task todo checkbox", snippet: "- [ ] " },
     { id: "list", label: "List of ideas", icon: "☰", cat: "Lists & ideas", keywords: "list ideas rows colored items simple notes brainstorm", snippet: LIST },
     { id: "board", label: "Embed a board", icon: "▥", cat: "Lists & ideas", keywords: "board kanban feedback embed reference read-only columns cards", snippet: BOARD },
+    { id: "links", label: "Reference list", icon: "🔗", cat: "Lists & ideas", keywords: "links references related entities notes blueprints boards list see also", snippet: LINKS },
+    { id: "linkchips", label: "Reference chips", icon: "🏷", cat: "Lists & ideas", keywords: "links references chips pills see also related compact inline", snippet: LINKCHIPS },
     { id: "workflow", label: "Workflow (steps)", icon: "⛓", cat: "Lists & ideas", keywords: "workflow steps chain process sequence pipeline", snippet: WORKFLOW },
     // — PR blocks —
     { id: "files", label: "Changed files", icon: "🗂", cat: "PR blocks", keywords: "files changed diff pr status added modified deleted", snippet: FILES },

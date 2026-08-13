@@ -49,6 +49,23 @@
     }
   }
 
+  // Publish the reference pane's width as a CSS var so the note's floating Edit
+  // FAB (viewport-fixed) can offset itself INTO the left/main pane when split.
+  let mainRowW = $state(0);
+  $effect(() => {
+    const el = mainRow;
+    if (!el) return;
+    const measure = () => (mainRowW = el.clientWidth);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  });
+  $effect(() => {
+    const w = app.splitOpen ? Math.round(mainRowW * (1 - splitFraction)) : 0;
+    document.documentElement.style.setProperty("--split-ref-w", `${w}px`);
+  });
+
   // Friendly label for the current section (shown in the toolbar so the
   // icon-only nav isn't a mystery).
   const VIEW_LABELS: Record<string, string> = {

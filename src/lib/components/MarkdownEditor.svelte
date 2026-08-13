@@ -54,6 +54,13 @@
 
   // Position class for the floating Edit/Done FAB.
   const fabPos = $derived(floatingContained ? "absolute" : "fixed");
+  // When the split reference pane is open, nudge the viewport-fixed FAB left of
+  // the divider so it lands in the main pane, not over the reference pane.
+  const fabStyle = $derived(
+    app.splitOpen && !floatingContained
+      ? "right: calc(1.5rem + var(--split-ref-w, 0px))"
+      : "",
+  );
 
   const md = createMarkdownIt();
 
@@ -293,7 +300,7 @@
       // guard against links to entities that have since been deleted so we
       // surface a friendly flash instead of an error screen.
       const ent = href.match(
-        /^(note|list|flashcard|blueprint|storyboard):(\d+)$/,
+        /^(note|list|flashcard|blueprint|storyboard|board):(\d+)$/,
       );
       if (ent) {
         const id = Number(ent[2]);
@@ -353,6 +360,9 @@
     } else if (kind === "storyboard") {
       if (app.storyboards.some((s) => s.id === id)) app.openStoryboard(id);
       else app.setFlash("That storyboard no longer exists");
+    } else if (kind === "board") {
+      if (app.feedbackBoards.some((b) => b.id === id)) app.openFeedbackBoard(id);
+      else app.setFlash("That board no longer exists");
     }
   }
 
@@ -624,6 +634,7 @@
       onclick={finishEditing}
       title="Finish editing — show the rendered note"
       aria-label="Finish editing"
+      style={fabStyle}
       class="{fabPos} bottom-6 right-6 z-20 inline-flex items-center gap-2 rounded-full bg-blue-600 px-4 py-2.5 text-sm font-medium text-white shadow-lg transition-colors hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
     >
       <svg viewBox="0 0 20 20" fill="currentColor" class="h-4 w-4"><path fill-rule="evenodd" d="M16.7 5.3a1 1 0 010 1.4l-7.5 7.5a1 1 0 01-1.4 0L4.3 10.7a1 1 0 011.4-1.4l2.8 2.79 6.8-6.79a1 1 0 011.4 0z" clip-rule="evenodd"/></svg>
@@ -706,6 +717,7 @@
         onclick={startEditing}
         title="Edit note"
         aria-label="Edit note"
+        style={fabStyle}
         class="{fabPos} bottom-6 right-6 z-20 inline-flex items-center gap-2 rounded-full border border-neutral-200/70 bg-white/90 px-4 py-2.5 text-sm font-medium text-neutral-700 shadow-lg backdrop-blur transition-colors hover:bg-neutral-100 dark:border-neutral-700/70 dark:bg-neutral-900/85 dark:text-neutral-200 dark:hover:bg-neutral-800"
       >
         <svg viewBox="0 0 20 20" fill="currentColor" class="h-4 w-4">
@@ -783,7 +795,10 @@
   }
   /* Links render as small button-like chips — easier to spot and click than
      underlined text (Sprint 23 follow-up). */
-  .markdown-body :global(a:not(.md-card)) {
+  /* Blocks that render their own anchors (cards, the links / linkchips lists)
+     opt out of the generic chip look. */
+  .markdown-body
+    :global(a:not(.md-card):not(.md-link-row):not(.md-linkchip)) {
     display: inline-block;
     padding: 0 0.5rem;
     border-radius: 0.375rem;
@@ -797,15 +812,18 @@
     cursor: pointer;
     transition: background 120ms;
   }
-  .markdown-body :global(a:not(.md-card):hover) {
+  .markdown-body
+    :global(a:not(.md-card):not(.md-link-row):not(.md-linkchip):hover) {
     background: rgba(37, 99, 235, 0.18);
   }
-  :global(html.dark) .markdown-body :global(a:not(.md-card)) {
+  :global(html.dark) .markdown-body
+    :global(a:not(.md-card):not(.md-link-row):not(.md-linkchip)) {
     color: #60a5fa;
     border-color: rgba(96, 165, 250, 0.35);
     background: rgba(96, 165, 250, 0.12);
   }
-  :global(html.dark) .markdown-body :global(a:not(.md-card):hover) {
+  :global(html.dark) .markdown-body
+    :global(a:not(.md-card):not(.md-link-row):not(.md-linkchip):hover) {
     background: rgba(96, 165, 250, 0.22);
   }
   /* Inline code only — code inside <pre> must NOT get the pill background

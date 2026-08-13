@@ -120,11 +120,13 @@ import {
   listFeedbackColumns,
   createFeedbackColumn as createFeedbackColumnIpc,
   renameFeedbackColumn as renameFeedbackColumnIpc,
+  moveFeedbackColumn as moveFeedbackColumnIpc,
   deleteFeedbackColumn as deleteFeedbackColumnIpc,
   listFeedbackCards,
   createFeedbackCard as createFeedbackCardIpc,
   updateFeedbackCard as updateFeedbackCardIpc,
   setFeedbackCardColor as setFeedbackCardColorIpc,
+  setFeedbackCardTags as setFeedbackCardTagsIpc,
   moveFeedbackCard as moveFeedbackCardIpc,
   deleteFeedbackCard as deleteFeedbackCardIpc,
   listFeedbackCardComments,
@@ -2071,6 +2073,10 @@ class AppStore {
     await this.refreshFeedbackColumns();
   }
 
+  async moveFeedbackColumn(id: number, left: boolean) {
+    this.feedbackColumns = await moveFeedbackColumnIpc(id, left);
+  }
+
   async deleteFeedbackColumn(id: number) {
     const col = this.feedbackColumns.find((c) => c.id === id);
     const cardsInCol = this.feedbackCards.filter((c) => c.columnId === id).length;
@@ -2155,6 +2161,11 @@ class AppStore {
 
   async setFeedbackCardColor(id: number, color: string | null) {
     await setFeedbackCardColorIpc(id, color);
+    await this.refreshFeedbackCards();
+  }
+
+  async setFeedbackCardTags(id: number, tags: string) {
+    await setFeedbackCardTagsIpc(id, tags);
     await this.refreshFeedbackCards();
   }
 

@@ -184,6 +184,48 @@ pub(crate) async fn rename_column(
     .ok_or_else(|| AppError::NotFound(format!("feedback column {id}")))
 }
 
+/// Reorder a column by swapping its `position` with the adjacent column
+/// (`left = true` → the one before it, else the one after). Returns the board's
+/// columns in their new order; a no-op at the end returns them unchanged.
+pub(crate) async fn move_column(
+    pool: &SqlitePool,
+    id: i64,
+    left: bool,
+) -> AppResult<Vec<FeedbackColumn>> {
+    let mut tx = pool.begin().await?;
+    let col = sqlx::query_as::<_, FeedbackColumn>(
+        "SELECT * FROM feedback_columns WHERE id = ?1",
+    )
+    .bind(id)
+    .fetch_optional(&mut *tx)
+    .await?
+    .ok_or_else(|| AppError::NotFound(format!("feedback column {id}")))?;
+    let sql = if left {
+        "SELECT * FROM feedback_columns WHERE board_id = ?1 AND position < ?2 ORDER BY position DESC LIMIT 1"
+    } else {
+        "SELECT * FROM feedback_columns WHERE board_id = ?1 AND position > ?2 ORDER BY position ASC LIMIT 1"
+    };
+    let neighbor = sqlx::query_as::<_, FeedbackColumn>(sql)
+        .bind(col.board_id)
+        .bind(col.position)
+        .fetch_optional(&mut *tx)
+        .await?;
+    if let Some(nb) = neighbor {
+        sqlx::query("UPDATE feedback_columns SET position = ?1 WHERE id = ?2")
+            .bind(nb.position)
+            .bind(col.id)
+            .execute(&mut *tx)
+            .await?;
+        sqlx::query("UPDATE feedback_columns SET position = ?1 WHERE id = ?2")
+            .bind(col.position)
+            .bind(nb.id)
+            .execute(&mut *tx)
+            .await?;
+    }
+    tx.commit().await?;
+    list_columns(pool, col.board_id).await
+}
+
 /// Delete a column. Cards in it cascade-delete (the UI confirms first).
 pub(crate) async fn delete_column(pool: &SqlitePool, id: i64) -> AppResult<()> {
     let res = sqlx::query("DELETE FROM feedback_columns WHERE id = ?1")
@@ -205,7 +247,7 @@ pub(crate) async fn list_cards(
     board_id: i64,
 ) -> AppResult<Vec<FeedbackCardSummary>> {
     sqlx::query_as::<_, FeedbackCardSummary>(
-        "SELECT c.id, c.board_id, c.column_id, c.title, c.description, c.color, c.position,
+        "SELECT c.id, c.board_id, c.column_id, c.title, c.description, c.color, c.tags, c.position,
                 (SELECT COUNT(*) FROM feedback_card_comments cc WHERE cc.card_id = c.id) AS comment_count,
                 c.created_at, c.updated_at
            FROM feedback_cards c
@@ -305,6 +347,23 @@ pub(crate) async fn set_card_color(
            WHERE id = ?2 RETURNING *",
     )
     .bind(color)
+    .bind(id)
+    .fetch_optional(pool)
+    .await?
+    .ok_or_else(|| AppError::NotFound(format!("feedback card {id}")))
+}
+
+/// Replace a card's tags (a single space-separated string of tag words).
+pub(crate) async fn set_card_tags(
+    pool: &SqlitePool,
+    id: i64,
+    tags: &str,
+) -> AppResult<FeedbackCard> {
+    sqlx::query_as::<_, FeedbackCard>(
+        "UPDATE feedback_cards SET tags = ?1, updated_at = datetime('now')
+           WHERE id = ?2 RETURNING *",
+    )
+    .bind(tags.trim())
     .bind(id)
     .fetch_optional(pool)
     .await?
@@ -522,6 +581,15 @@ pub async fn rename_feedback_column(
 }
 
 #[tauri::command]
+pub async fn move_feedback_column(
+    state: State<'_, AppState>,
+    id: i64,
+    left: bool,
+) -> AppResult<Vec<FeedbackColumn>> {
+    move_column(&state.pool, id, left).await
+}
+
+#[tauri::command]
 pub async fn delete_feedback_column(state: State<'_, AppState>, id: i64) -> AppResult<()> {
     delete_column(&state.pool, id).await
 }
@@ -567,6 +635,15 @@ pub async fn set_feedback_card_color(
     color: Option<String>,
 ) -> AppResult<FeedbackCard> {
     set_card_color(&state.pool, id, color.as_deref()).await
+}
+
+#[tauri::command]
+pub async fn set_feedback_card_tags(
+    state: State<'_, AppState>,
+    id: i64,
+    tags: String,
+) -> AppResult<FeedbackCard> {
+    set_card_tags(&state.pool, id, &tags).await
 }
 
 #[tauri::command]

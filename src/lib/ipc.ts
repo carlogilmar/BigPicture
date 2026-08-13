@@ -147,6 +147,7 @@ export type FeedbackCard = {
   title: string;
   description: string;
   color: string | null;
+  tags: string;
   position: number;
   createdAt: string;
   updatedAt: string;
@@ -273,6 +274,8 @@ export const createFeedbackColumn = (boardId: number, name: string) =>
   invoke<FeedbackColumn>("create_feedback_column", { boardId, name });
 export const renameFeedbackColumn = (id: number, name: string) =>
   invoke<FeedbackColumn>("rename_feedback_column", { id, name });
+export const moveFeedbackColumn = (id: number, left: boolean) =>
+  invoke<FeedbackColumn[]>("move_feedback_column", { id, left });
 export const deleteFeedbackColumn = (id: number) =>
   invoke<void>("delete_feedback_column", { id });
 
@@ -295,6 +298,8 @@ export const updateFeedbackCard = (
 ) => invoke<FeedbackCard>("update_feedback_card", { id, title, description });
 export const setFeedbackCardColor = (id: number, color: string | null) =>
   invoke<FeedbackCard>("set_feedback_card_color", { id, color });
+export const setFeedbackCardTags = (id: number, tags: string) =>
+  invoke<FeedbackCard>("set_feedback_card_tags", { id, tags });
 export const moveFeedbackCard = (
   id: number,
   targetColumnId: number,

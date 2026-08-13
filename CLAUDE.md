@@ -411,7 +411,26 @@ numbered, applied at startup. To add one:
 4. Run `pnpm tauri dev` once to confirm migrations apply cleanly on
    your machine.
 
-Last updated: end of Sprint 63 (Split view — a read-only REFERENCE pane beside the editable main
+Last updated: end of Sprint 64 (Reference list blocks — two powered-markdown blocks that render a
+list of internal entity links as a distinct "related items" component instead of the generic blue
+link-chips. Both parse the same body (one `[label](kind:id)` per line, an optional `- `/`* `/`1. `
+list marker tolerated; labels are authored inline so they render SYNCHRONOUSLY like list/files/stats,
+no store/IPC — unlike the async `{{board N}}` embed). `parseEntityLinks` resolves each `kind:id` to a
+color + kind label + icon (note blue · blueprint violet · board teal · list green · storyboard pink ·
+flashcard amber; external `https://` → globe/gray/hostname). ```links [title] (`renderLinks`) → a
+bordered `.md-links` list w/ a `blockHeader` (title default "References" + count) and one `<a
+href="kind:id">` row each: a kind-colored icon TILE (color via `--lc` set inline so the CSS is
+kind-agnostic) + ellipsised label + uppercase kind word + a hover ↗; PNG-copyable. ```linkchips
+[title] (`renderLinkChips`) → the same links as compact "see also" pills (colored dot + label,
+optional small title); no PNG. NAVIGATION: the anchors reuse MarkdownEditor's `onPreviewClick` →
+`navigateEntity`, and `board` became a first-class entity link there (added to the regex +
+`navigateEntity`→`openFeedbackBoard`; previously boards were reachable in markdown only via the embed).
+GOTCHA: the Sprint 23 chip rule `a:not(.md-card)` boxed every anchor blue — extended its opt-out to
+`a:not(.md-card):not(.md-link-row):not(.md-linkchip)` (any future block rendering its own anchors must
+add itself). Slash "Reference list"/"Reference chips" (Lists & ideas) + FormattingHelp; mocked up 4
+options as an Artifact first (rows + chips chosen). Frontend-only, no backend/migration; svelte-check
++ build pass; anchor clicks need a live webview run. See documentation/SPRINT64.md. — earlier:
+Sprint 63 (Split view — a read-only REFERENCE pane beside the editable main
 pane. `+page.svelte` toolbar split button (`app.toggleSplit`) turns the main content area into a
 horizontal flex with a draggable divider (`splitFraction` 0.25–0.82, pointer-capture); left = the
 app as-is (global selection/sidebar/nav/palette unchanged), right = `SecondaryPane`. Store:

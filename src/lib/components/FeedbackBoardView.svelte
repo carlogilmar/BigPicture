@@ -4,6 +4,7 @@
   import { cardAccent } from "$lib/cardColors";
   import FeedbackCardPanel from "$lib/components/FeedbackCardPanel.svelte";
   import TagBadges from "$lib/components/TagBadges.svelte";
+  import CardTags from "$lib/components/CardTags.svelte";
   import IdChip from "$lib/components/IdChip.svelte";
 
   let board = $derived(
@@ -317,7 +318,7 @@
     </header>
 
     <div class="flex flex-1 gap-3 overflow-x-auto overflow-y-hidden pb-2">
-      {#each columns as col (col.id)}
+      {#each columns as col, ci (col.id)}
         {@const cards = cardsForColumn(col.id)}
         <section
           class="flex w-72 shrink-0 flex-col rounded-lg border border-neutral-200/70 bg-neutral-50/70 transition-colors dark:border-neutral-700/70 dark:bg-neutral-900/40"
@@ -348,6 +349,26 @@
               <span class="rounded-full bg-neutral-200/60 px-1.5 py-0.5 text-[10px] tabular-nums text-neutral-600 dark:bg-neutral-700/40 dark:text-neutral-300">
                 {cards.length}
               </span>
+              <button
+                type="button"
+                class="rounded p-0.5 text-neutral-400 opacity-0 transition-opacity hover:text-neutral-800 group-hover:opacity-100 disabled:invisible dark:text-neutral-500 dark:hover:text-neutral-200"
+                title="Move column left"
+                aria-label="Move column left"
+                disabled={ci === 0}
+                onclick={() => app.moveFeedbackColumn(col.id, true)}
+              >
+                <svg viewBox="0 0 20 20" fill="currentColor" class="h-3.5 w-3.5"><path fill-rule="evenodd" d="M12.79 5.23a.75.75 0 010 1.06L9.06 10l3.73 3.71a.75.75 0 11-1.06 1.06l-4.24-4.24a.75.75 0 010-1.06l4.24-4.24a.75.75 0 011.06 0z" clip-rule="evenodd"/></svg>
+              </button>
+              <button
+                type="button"
+                class="rounded p-0.5 text-neutral-400 opacity-0 transition-opacity hover:text-neutral-800 group-hover:opacity-100 disabled:invisible dark:text-neutral-500 dark:hover:text-neutral-200"
+                title="Move column right"
+                aria-label="Move column right"
+                disabled={ci === columns.length - 1}
+                onclick={() => app.moveFeedbackColumn(col.id, false)}
+              >
+                <svg viewBox="0 0 20 20" fill="currentColor" class="h-3.5 w-3.5"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 010-1.06L10.94 10 7.21 6.29a.75.75 0 111.06-1.06l4.24 4.24a.75.75 0 010 1.06l-4.24 4.24a.75.75 0 01-1.06 0z" clip-rule="evenodd"/></svg>
+              </button>
               <button
                 type="button"
                 class="rounded p-0.5 text-neutral-300 opacity-0 transition-opacity hover:text-red-500 group-hover:opacity-100 dark:text-neutral-600"
@@ -387,6 +408,7 @@
                 <p class="text-sm font-medium text-neutral-900 dark:text-neutral-100">
                   <TagBadges text={c.title} />
                 </p>
+                <CardTags tags={c.tags} />
                 {#if c.description.trim()}
                   <p class="mt-1 line-clamp-3 whitespace-pre-wrap text-xs text-neutral-600 dark:text-neutral-400">
                     {c.description}
