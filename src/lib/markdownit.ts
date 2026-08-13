@@ -5,6 +5,8 @@
 import MarkdownIt from "markdown-it";
 import { hierarchy, treemap, treemapSquarify } from "d3-hierarchy";
 import { iconByShortcode, iconInlineSvg } from "$lib/storyIcons";
+import { cardAccent } from "$lib/cardColors";
+import type { FeedbackColumn, FeedbackCardSummary } from "$lib/ipc";
 import { renderMermaid } from "$lib/mermaid";
 import hljs from "highlight.js/lib/core";
 import elixir from "highlight.js/lib/languages/elixir";
@@ -204,6 +206,9 @@ export function createMarkdownIt(): MarkdownIt {
   // by default) so a long note reads as a summary you expand on demand. Runs
   // after line_numbers so the heading tokens keep their data-line.
   addCollapsibleSections(md);
+
+  // `{{board N}}` → a read-only feedback-board embed (hydrated after render).
+  addBoardEmbeds(md);
 
   // One delegated listener powers the copy buttons across every surface.
   installCodeCopy();
@@ -1153,6 +1158,120 @@ function renderBlueprint(source: string, title: string, md: MarkdownIt): string 
   return withImgCopy(
     `<div class="md-blueprint">${bar}<div class="md-bp-canvas">${scene}</div></div>`,
   );
+}
+
+// Minimal HTML escape for content built outside a markdown-it render pass.
+function escHtml(s: string): string {
+  return s.replace(
+    /[&<>"]/g,
+    (c) =>
+      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c] ?? c,
+  );
+}
+
+// ```board <id> → a placeholder for a READ-ONLY feedback-board embed. The real
+// content (columns + cards) is fetched + filled in by hydrateBoardEmbeds (like
+// mermaid), since a synchronous fence can't reach the store / IPC.
+function renderBoardEmbed(idStr: string): string {
+  const id = parseInt(idStr, 10);
+  if (!Number.isFinite(id)) return "";
+  return withImgCopy(
+    `<div class="md-board-embed" data-board="${id}"><div class="md-board-loading">Loading board…</div></div>`,
+  );
+}
+
+// `{{board N}}` on its own line → the board embed placeholder. A core rule that
+// replaces a paragraph consisting solely of the marker (the ```board <id> fence
+// still works too). Kept simple: exact match, block-level only.
+function addBoardEmbeds(md: MarkdownIt): void {
+  md.core.ruler.push("board_embeds", (state) => {
+    const tokens = state.tokens;
+    for (let i = 0; i + 2 < tokens.length; i++) {
+      if (
+        tokens[i].type === "paragraph_open" &&
+        tokens[i + 1].type === "inline" &&
+        tokens[i + 2].type === "paragraph_close"
+      ) {
+        const m = /^\{\{\s*board[\s:]+(\d+)\s*\}\}$/i.exec(
+          tokens[i + 1].content.trim(),
+        );
+        if (m) {
+          const t = new state.Token("html_block", "", 0);
+          t.content = renderBoardEmbed(m[1]);
+          t.block = true;
+          tokens.splice(i, 3, t);
+        }
+      }
+    }
+  });
+}
+
+// Build the read-only mini-kanban HTML for an embedded board.
+function boardEmbedHtml(
+  title: string,
+  cols: FeedbackColumn[],
+  cards: FeedbackCardSummary[],
+): string {
+  const byCol = new Map<number, FeedbackCardSummary[]>();
+  for (const c of cards) {
+    if (!byCol.has(c.columnId)) byCol.set(c.columnId, []);
+    byCol.get(c.columnId)!.push(c);
+  }
+  const colsHtml = [...cols]
+    .sort((a, b) => a.position - b.position)
+    .map((col) => {
+      const list = (byCol.get(col.id) ?? []).sort(
+        (a, b) => a.position - b.position,
+      );
+      const cardsHtml =
+        list
+          .map((cd) => {
+            const accent = cardAccent(cd.color);
+            const style = accent ? ` style="border-left-color:${accent}"` : "";
+            const cc = cd.commentCount
+              ? `<span class="md-board-cc">${cd.commentCount}</span>`
+              : "";
+            return `<div class="md-board-card"${style}><span class="md-board-card-t">${escHtml(cd.title)}</span>${cc}</div>`;
+          })
+          .join("") || `<div class="md-board-empty">·</div>`;
+      return (
+        `<div class="md-board-col"><div class="md-board-col-h">${escHtml(col.name)}` +
+        `<span class="md-board-col-n">${list.length}</span></div>` +
+        `<div class="md-board-col-body">${cardsHtml}</div></div>`
+      );
+    })
+    .join("");
+  const head =
+    `<div class="md-board-head"><span class="md-board-title">${escHtml(title)} <span class="md-board-open">↗</span></span>` +
+    `<span class="md-board-meta">${cards.length} card${cards.length === 1 ? "" : "s"}</span></div>`;
+  return `${head}<div class="md-board-cols">${colsHtml}</div>`;
+}
+
+// Fetch each embedded board (```board <id>) and fill its placeholder with the
+// read-only mini-kanban. Guarded per placeholder (data-rendered) so the
+// MutationObserver re-run doesn't refetch or loop on its own innerHTML write.
+export async function hydrateBoardEmbeds(el: HTMLElement): Promise<void> {
+  const nodes = Array.from(
+    el.querySelectorAll<HTMLElement>(".md-board-embed[data-board]"),
+  );
+  for (const node of nodes) {
+    const id = Number(node.dataset.board);
+    if (!Number.isFinite(id) || node.dataset.rendered === String(id)) continue;
+    node.dataset.rendered = String(id);
+    try {
+      const { listFeedbackBoards, listFeedbackColumns, listFeedbackCards } =
+        await import("$lib/ipc");
+      const [boards, cols, cards] = await Promise.all([
+        listFeedbackBoards(true),
+        listFeedbackColumns(id),
+        listFeedbackCards(id),
+      ]);
+      const title = boards.find((b) => b.id === id)?.title ?? "Board";
+      node.innerHTML = boardEmbedHtml(title, cols, cards);
+    } catch {
+      node.innerHTML = '<div class="md-board-err">Board unavailable</div>';
+    }
+  }
 }
 
 // ```chart renderer. Same `key: value` line shape as ```cards: `type` / `title`

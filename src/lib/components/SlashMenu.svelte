@@ -78,6 +78,7 @@
     "\n```list\nFirst idea — an optional description - violet\nSecond idea - teal\nThird idea\n```\n";
   const BLUEPRINT =
     "\n```blueprint Request flow\nClient: sends request - blue\nAPI: validates & routes - violet\nDB: reads rows - teal\nClient -> API -> DB\n```\n";
+  const BOARD = "\n{{board 1}}\n";
 
   // Grouped by `cat` (the array order == menu order, so category headers appear
   // when the category changes).
@@ -100,6 +101,7 @@
     { id: "numbered", label: "Numbered list", icon: "1.", cat: "Lists & ideas", keywords: "list ol ordered", snippet: "1. " },
     { id: "todo", label: "Checklist", icon: "☑", cat: "Lists & ideas", keywords: "task todo checkbox", snippet: "- [ ] " },
     { id: "list", label: "List of ideas", icon: "☰", cat: "Lists & ideas", keywords: "list ideas rows colored items simple notes brainstorm", snippet: LIST },
+    { id: "board", label: "Embed a board", icon: "▥", cat: "Lists & ideas", keywords: "board kanban feedback embed reference read-only columns cards", snippet: BOARD },
     { id: "workflow", label: "Workflow (steps)", icon: "⛓", cat: "Lists & ideas", keywords: "workflow steps chain process sequence pipeline", snippet: WORKFLOW },
     // — PR blocks —
     { id: "files", label: "Changed files", icon: "🗂", cat: "PR blocks", keywords: "files changed diff pr status added modified deleted", snippet: FILES },

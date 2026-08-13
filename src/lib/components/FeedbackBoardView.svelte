@@ -4,6 +4,7 @@
   import { cardAccent } from "$lib/cardColors";
   import FeedbackCardPanel from "$lib/components/FeedbackCardPanel.svelte";
   import TagBadges from "$lib/components/TagBadges.svelte";
+  import IdChip from "$lib/components/IdChip.svelte";
 
   let board = $derived(
     app.feedbackBoards.find((b) => b.id === app.selectedFeedbackBoardId) ?? null,
@@ -275,6 +276,7 @@
             archived
           </span>
         {/if}
+        <IdChip kind="board" id={board.id} />
       </div>
       <div class="flex items-center gap-1">
         <button

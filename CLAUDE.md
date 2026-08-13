@@ -411,7 +411,20 @@ numbered, applied at startup. To add one:
 4. Run `pnpm tauri dev` once to confirm migrations apply cleanly on
    your machine.
 
-Last updated: end of Sprint 61 (Blueprint block · collapsible-section overhaul · task notes.
+Last updated: end of Sprint 62 (Embed a feedback board in a note — `{{board N}}` on its own line
+renders a READ-ONLY mini-kanban of board N. Since a synchronous fence can't reach the store/IPC,
+`addBoardEmbeds` is a core rule that turns a paragraph of just the marker into a placeholder
+`<div class="md-board-embed" data-board="N">`; `hydrateBoardEmbeds(el)` (exported, called from
+MarkdownEditor's hydration `$effect` + MutationObserver, guarded per-placeholder via
+`data-rendered`) fetches `listFeedbackBoards`/`listFeedbackColumns`/`listFeedbackCards` and fills
+`boardEmbedHtml` — header (title + card count) + columns (name + count) + card chips (title +
+`cardAccent` rail + comment count). Kanban look: tinted board area, transparent columns, white
+cards, columns `flex:1 1 0` to fill width; 📷 PNG button. Clicking the embed header opens the board
+(`app.openFeedbackBoard` via `onPreviewClick`). Boards now show an id chip in the board header
+(`IdChip` gained a `board` kind that displays+copies `{{board N}}`). Slash "Embed a board" (Lists &
+ideas) + FormattingHelp; the interim ```board fence was removed. svelte-check + build pass; board
+content loads via IPC so it needs a live webview run. See documentation/SPRINT62.md.
+— earlier: Sprint 61 (Blueprint block · collapsible-section overhaul · task notes.
 NEW ```blueprint [title] (`renderBlueprint`): the Blueprint import DSL rendered inline as a small
 static diagram that LOOKS like the Blueprints canvas — `Name: desc [- color]` → a card, `A -> B
 -> C` → edges (auto-create nodes); longest-path (Kahn) left→right layout; a DOT-GRID scene

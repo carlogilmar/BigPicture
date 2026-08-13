@@ -37,6 +37,7 @@
         { syntax: "```elixir … ```", does: "Code block with syntax highlighting (elixir, js, ts, python, rust, sql, bash, json, html, css, yaml)" },
         { syntax: "```mermaid … ```", does: "Renders a diagram inline" },
         { syntax: "```blueprint <title> … ```", does: "A small node-graph like the Blueprints canvas (dot grid + cards + animated arrows): `Name: short description` makes a card (add ` - color` to tint it), `A -> B -> C` connects them (auto-laid-out). For big diagrams use Blueprints. Slash command: Blueprint." },
+        { syntax: "{{board 3}}  (own line)", does: "Embed a feedback board READ-ONLY (its columns + cards). Copy `{{board N}}` from the board's id chip (top of the board). Click the embed header to open the full board. Slash command: Embed a board." },
         { syntax: "```cards … ```", does: "Grid of link cards — build dashboards. See “Cards” below (or the Insert cards button)" },
         { syntax: "```chart … ```", does: "Inline bar / donut / line chart — `type: bar|donut|line`, `title:`, then `Label: number` lines. See “Charts” below." },
         { syntax: "```marquee blue fast … ```", does: "Scrolling colored banner — see “Marquee banner” (speeds) and “Colors & gradients” below." },

@@ -7,6 +7,7 @@
   import {
     createMarkdownIt,
     hydrateMermaidBlocks,
+    hydrateBoardEmbeds,
     countWords,
     toggleTaskInSource,
     stepProgressInSource,
@@ -127,7 +128,11 @@
     const t = theme.resolved === "dark" ? "dark" : "default";
     if (!el) return;
     hydrateMermaidBlocks(el, t);
-    const mo = new MutationObserver(() => hydrateMermaidBlocks(el, t));
+    void hydrateBoardEmbeds(el);
+    const mo = new MutationObserver(() => {
+      hydrateMermaidBlocks(el, t);
+      void hydrateBoardEmbeds(el);
+    });
     mo.observe(el, { childList: true, subtree: true });
     return () => mo.disconnect();
   });
@@ -252,6 +257,18 @@
       e.preventDefault();
       const idx = Number(sumEl.dataset.section);
       if (Number.isFinite(idx)) void toggleSection(idx);
+      return;
+    }
+    // Embedded board header: open the board (read-only embed → jump to it).
+    if (target.closest(".md-board-head")) {
+      const embed = target.closest<HTMLElement>(".md-board-embed[data-board]");
+      const id = Number(embed?.dataset.board);
+      if (Number.isFinite(id)) {
+        e.preventDefault();
+        if (app.feedbackBoards.some((b) => b.id === id))
+          void app.openFeedbackBoard(id);
+        else app.setFlash("That board no longer exists");
+      }
       return;
     }
     const anchor = target.closest("a");

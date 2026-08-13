@@ -2,13 +2,16 @@
   import { app } from "$lib/stores/app.svelte";
 
   type Props = {
-    kind: "list" | "note" | "todo" | "blueprint" | "storyboard";
+    kind: "list" | "note" | "todo" | "blueprint" | "storyboard" | "board";
     id: number;
   };
 
   let { kind, id }: Props = $props();
 
-  let ref = $derived(`${kind}:${id}`);
+  // Boards embed read-only into notes via `{{board N}}` (not an entity link).
+  let ref = $derived(
+    kind === "board" ? `{{board ${id}}}` : `${kind}:${id}`,
+  );
 
   async function copy() {
     try {

@@ -1212,6 +1212,144 @@ html.dark .markdown-body .md-bp-d {
   }
 }
 
+/* ```board <id> — a read-only embed of a feedback board (mini kanban). */
+.markdown-body .md-board-embed {
+  margin: 0.7rem 0;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 10px;
+  overflow: hidden;
+  background: #ffffff;
+}
+html.dark .markdown-body .md-board-embed {
+  border-color: rgba(255, 255, 255, 0.14);
+  background: #171e29;
+}
+.markdown-body .md-board-loading,
+.markdown-body .md-board-err {
+  padding: 14px 16px;
+  font-size: 0.82rem;
+  color: rgba(0, 0, 0, 0.45);
+}
+html.dark .markdown-body .md-board-loading,
+html.dark .markdown-body .md-board-err {
+  color: rgba(255, 255, 255, 0.45);
+}
+.markdown-body .md-board-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0.5rem 0.8rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  background: rgba(0, 0, 0, 0.025);
+  font: 700 0.8rem/1.2 system-ui, sans-serif;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.markdown-body .md-board-head:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+html.dark .markdown-body .md-board-head {
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+}
+html.dark .markdown-body .md-board-head:hover {
+  background: rgba(255, 255, 255, 0.07);
+}
+.markdown-body .md-board-open {
+  opacity: 0.4;
+  font-weight: 400;
+}
+.markdown-body .md-board-meta {
+  font-weight: 600;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: rgba(0, 0, 0, 0.45);
+}
+html.dark .markdown-body .md-board-meta {
+  color: rgba(255, 255, 255, 0.45);
+}
+/* Kanban look: a subtle board area with white cards; columns fill the space. */
+.markdown-body .md-board-cols {
+  display: flex;
+  gap: 10px;
+  padding: 10px;
+  overflow-x: auto;
+  align-items: flex-start;
+  background: color-mix(in srgb, currentColor 4%, transparent);
+}
+.markdown-body .md-board-col {
+  flex: 1 1 0;
+  min-width: 132px;
+  border-radius: 8px;
+  padding: 2px;
+}
+.markdown-body .md-board-col-h {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 4px 6px;
+  font: 700 0.68rem/1.2 system-ui, sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: rgba(0, 0, 0, 0.55);
+}
+html.dark .markdown-body .md-board-col-h {
+  color: rgba(255, 255, 255, 0.55);
+}
+.markdown-body .md-board-col-n {
+  font-size: 0.62rem;
+  padding: 1px 5px;
+  border-radius: 999px;
+  background: color-mix(in srgb, currentColor 12%, transparent);
+}
+.markdown-body .md-board-col-body {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.markdown-body .md-board-card {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border-left: 3px solid var(--slate, #94a3b8);
+  background: #ffffff;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.06);
+  font-size: 0.78rem;
+}
+html.dark .markdown-body .md-board-card {
+  background: #1b2333;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.3);
+}
+.markdown-body .md-board-card-t {
+  flex: 1;
+  min-width: 0;
+}
+.markdown-body .md-board-cc {
+  flex: none;
+  font-size: 0.62rem;
+  font-weight: 700;
+  padding: 0 5px;
+  border-radius: 999px;
+  color: rgba(0, 0, 0, 0.5);
+  background: color-mix(in srgb, currentColor 10%, transparent);
+}
+html.dark .markdown-body .md-board-cc {
+  color: rgba(255, 255, 255, 0.5);
+}
+.markdown-body .md-board-empty {
+  padding: 4px;
+  text-align: center;
+  color: rgba(0, 0, 0, 0.25);
+  font-size: 0.8rem;
+}
+html.dark .markdown-body .md-board-empty {
+  color: rgba(255, 255, 255, 0.25);
+}
+
 /* Capture hooks — during a GIF export the block gets `.md-cap`; live CSS
    animations are frozen and each frame's state is driven from JS. */
 .markdown-body .md-cap .md-pulse::after { animation: none !important; opacity: var(--capop, 0.35) !important; }
