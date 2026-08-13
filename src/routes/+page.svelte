@@ -22,9 +22,32 @@
   import FocusMode from "$lib/components/FocusMode.svelte";
   import PasswordsView from "$lib/components/PasswordsView.svelte";
   import StoryboardView from "$lib/components/StoryboardView.svelte";
+  import SecondaryPane from "$lib/components/SecondaryPane.svelte";
 
   let sidebar: Sidebar | undefined = $state();
   let inspectorTodo = $derived(app.selectedTodo());
+
+  // Split (reference) pane: draggable divider between the main + reference pane.
+  let splitFraction = $state(0.55);
+  let mainRow: HTMLDivElement | undefined = $state();
+  let dragging = $state(false);
+  function startDrag(e: PointerEvent) {
+    dragging = true;
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+  }
+  function onDrag(e: PointerEvent) {
+    if (!dragging || !mainRow) return;
+    const r = mainRow.getBoundingClientRect();
+    splitFraction = Math.min(0.82, Math.max(0.25, (e.clientX - r.left) / r.width));
+  }
+  function endDrag(e: PointerEvent) {
+    dragging = false;
+    try {
+      (e.target as HTMLElement).releasePointerCapture(e.pointerId);
+    } catch {
+      /* pointer already released */
+    }
+  }
 
   // Friendly label for the current section (shown in the toolbar so the
   // icon-only nav isn't a mystery).
@@ -190,10 +213,28 @@
           <span class="hidden sm:inline">Search</span>
           <kbd class="rounded border border-neutral-300/70 px-1 text-[10px] dark:border-neutral-600/70">⌘K</kbd>
         </button>
+        <button
+          type="button"
+          class="flex h-8 w-8 items-center justify-center rounded-md border border-neutral-200/60 bg-white/70 text-neutral-500 shadow-sm backdrop-blur transition-colors hover:bg-neutral-100 dark:border-neutral-700/60 dark:bg-neutral-900/70 dark:text-neutral-400 dark:hover:bg-neutral-800"
+          class:text-blue-500={app.splitOpen}
+          class:dark:text-blue-400={app.splitOpen}
+          title="Reference pane — show a note, blueprint or board alongside"
+          aria-label="Toggle reference pane"
+          onclick={() => app.toggleSplit()}
+        >
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" class="h-4 w-4">
+            <rect x="2.5" y="4" width="15" height="12" rx="2" />
+            <line x1="11.5" y1="4" x2="11.5" y2="16" />
+          </svg>
+        </button>
         <TopNav />
       </div>
     </div>
-    <div class="flex-1 overflow-y-auto">
+    <div bind:this={mainRow} class="flex min-h-0 flex-1" class:select-none={dragging}>
+    <div
+      class="min-w-0 overflow-y-auto"
+      style={app.splitOpen ? `flex:0 0 ${splitFraction * 100}%` : "flex:1 1 0%"}
+    >
     {#if app.loading}
       <p class="p-8 text-sm text-neutral-400 dark:text-neutral-500">Loading…</p>
     {:else if app.error}
@@ -231,6 +272,22 @@
       <StoryboardView />
     {:else}
       <ListView />
+    {/if}
+    </div>
+    {#if app.splitOpen}
+      <div
+        class="w-1.5 shrink-0 cursor-col-resize bg-neutral-200/70 transition-colors hover:bg-blue-400/60 dark:bg-neutral-700/60"
+        class:!bg-blue-400={dragging}
+        role="separator"
+        aria-orientation="vertical"
+        tabindex="-1"
+        onpointerdown={startDrag}
+        onpointermove={onDrag}
+        onpointerup={endDrag}
+      ></div>
+      <div class="min-w-0 flex-1 overflow-hidden border-neutral-200/70 dark:border-neutral-700/70">
+        <SecondaryPane />
+      </div>
     {/if}
     </div>
   </div>

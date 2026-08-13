@@ -262,6 +262,28 @@ class AppStore {
   // Collapse the sidebar for distraction-free, full-width reading.
   sidebarCollapsed = $state(false);
 
+  // Second (reference) pane — a read-only note / blueprint / board shown beside
+  // the main editing pane. `splitRef === null` while open shows a picker.
+  splitOpen = $state(false);
+  splitRef = $state<{
+    kind: "note" | "blueprint" | "board";
+    id: number;
+    title: string;
+  } | null>(null);
+
+  toggleSplit() {
+    this.splitOpen = !this.splitOpen;
+    if (!this.splitOpen) this.splitRef = null;
+  }
+  openSplitRef(kind: "note" | "blueprint" | "board", id: number, title: string) {
+    this.splitRef = { kind, id, title };
+    this.splitOpen = true;
+  }
+  closeSplit() {
+    this.splitOpen = false;
+    this.splitRef = null;
+  }
+
   toggleSidebar() {
     this.sidebarCollapsed = !this.sidebarCollapsed;
   }

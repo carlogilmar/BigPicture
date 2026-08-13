@@ -411,7 +411,21 @@ numbered, applied at startup. To add one:
 4. Run `pnpm tauri dev` once to confirm migrations apply cleanly on
    your machine.
 
-Last updated: end of Sprint 62 (Embed a feedback board in a note — `{{board N}}` on its own line
+Last updated: end of Sprint 63 (Split view — a read-only REFERENCE pane beside the editable main
+pane. `+page.svelte` toolbar split button (`app.toggleSplit`) turns the main content area into a
+horizontal flex with a draggable divider (`splitFraction` 0.25–0.82, pointer-capture); left = the
+app as-is (global selection/sidebar/nav/palette unchanged), right = `SecondaryPane`. Store:
+`splitOpen` + `splitRef {kind:note|blueprint|board, id, title}` (null while open → picker) +
+toggleSplit/openSplitRef/closeSplit. SecondaryPane empty state = a picker (search + "Recently
+edited" notes/blueprints/boards by updatedAt); reference renders note + board via the SAME
+`MarkdownEditor` in a new `readOnly` mode (identical output — the fix for a style mismatch that came
+from a bare `md.render`; board = its `{{board N}}` embed), blueprint via a static fit-to-width SVG
+overview (`get_blueprint` → cards at saved positions + edges, no xyflow). Header: open-in-main /
+Change / ✕. `readOnly` prop on MarkdownEditor: preview only — `startEditing` no-ops, edit
+buttons/FAB hidden, `data-md-sections` persist hook dropped, source-mutating clicks ignored (links
+still navigate). The floating heading outline hides while split is open (`!app.splitOpen`). Only
+note/blueprint/board; read-only by design. svelte-check + build pass; content loads via IPC (needs
+a live webview run). See documentation/SPRINT63.md. — earlier: Sprint 62 (Embed a feedback board in a note — `{{board N}}` on its own line
 renders a READ-ONLY mini-kanban of board N. Since a synchronous fence can't reach the store/IPC,
 `addBoardEmbeds` is a core rule that turns a paragraph of just the marker into a placeholder
 `<div class="md-board-embed" data-board="N">`; `hydrateBoardEmbeds(el)` (exported, called from

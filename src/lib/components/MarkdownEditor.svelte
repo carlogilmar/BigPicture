@@ -35,6 +35,9 @@
     // instead of the viewport (`fixed`) — for use inside a modal so the button
     // sits in the modal's corner, not the screen's (used by the task detail).
     floatingContained?: boolean;
+    // Render the preview only — no editing (used by the reference pane so a note
+    // renders identically to the main pane without being editable there).
+    readOnly?: boolean;
   };
 
   let {
@@ -46,6 +49,7 @@
     outline = false,
     floatingEdit = false,
     floatingContained = false,
+    readOnly = false,
   }: Props = $props();
 
   // Position class for the floating Edit/Done FAB.
@@ -180,6 +184,7 @@
   });
 
   function startEditing() {
+    if (readOnly) return;
     editing = true;
     queueMicrotask(() => textarea?.focus());
   }
@@ -232,32 +237,36 @@
 
   function onPreviewClick(e: MouseEvent) {
     const target = e.target as HTMLElement;
-    // Task checkboxes: flip the matching `[ ]`/`[x]` marker in the source and
-    // persist — the re-render restores the checkbox from the new source.
-    if (target instanceof HTMLInputElement && target.classList.contains("md-task")) {
-      e.preventDefault();
-      const idx = Number(target.dataset.task);
-      if (Number.isFinite(idx)) void toggleTask(idx);
-      return;
-    }
-    // Progress steppers: step the matching `n/d` bar in the source and persist.
-    const step = target.closest<HTMLElement>(".md-progress-step");
-    if (step) {
-      e.preventDefault();
-      const idx = Number(step.dataset.progress);
-      const delta = step.dataset.dir === "inc" ? 1 : -1;
-      if (Number.isFinite(idx)) void stepProgress(idx, delta);
-      return;
-    }
-    // Collapsible section header: flip the `>`/`>>` marker in the source and
-    // persist (so the open/closed status survives edit → view). A link inside
-    // the heading falls through to the anchor handling below.
-    const sumEl = target.closest<HTMLElement>(".md-section-sum");
-    if (sumEl && sumEl.dataset.section !== undefined && !target.closest("a")) {
-      e.preventDefault();
-      const idx = Number(sumEl.dataset.section);
-      if (Number.isFinite(idx)) void toggleSection(idx);
-      return;
+    // Source-mutating clicks (checkbox / stepper / section toggle) only apply
+    // when editable; a read-only reference just navigates links.
+    if (!readOnly) {
+      // Task checkboxes: flip the matching `[ ]`/`[x]` marker in the source and
+      // persist — the re-render restores the checkbox from the new source.
+      if (target instanceof HTMLInputElement && target.classList.contains("md-task")) {
+        e.preventDefault();
+        const idx = Number(target.dataset.task);
+        if (Number.isFinite(idx)) void toggleTask(idx);
+        return;
+      }
+      // Progress steppers: step the matching `n/d` bar in the source and persist.
+      const step = target.closest<HTMLElement>(".md-progress-step");
+      if (step) {
+        e.preventDefault();
+        const idx = Number(step.dataset.progress);
+        const delta = step.dataset.dir === "inc" ? 1 : -1;
+        if (Number.isFinite(idx)) void stepProgress(idx, delta);
+        return;
+      }
+      // Collapsible section header: flip the `>`/`>>` marker in the source and
+      // persist (so the open/closed status survives edit → view). A link inside
+      // the heading falls through to the anchor handling below.
+      const sumEl = target.closest<HTMLElement>(".md-section-sum");
+      if (sumEl && sumEl.dataset.section !== undefined && !target.closest("a")) {
+        e.preventDefault();
+        const idx = Number(sumEl.dataset.section);
+        if (Number.isFinite(idx)) void toggleSection(idx);
+        return;
+      }
     }
     // Embedded board header: open the board (read-only embed → jump to it).
     if (target.closest(".md-board-head")) {
@@ -625,7 +634,7 @@
   <!-- `relative` only when the small top-right Edit button needs anchoring; with
        floatingEdit the FAB should anchor higher up (the modal, when contained). -->
   <div class:relative={!floatingEdit}>
-    {#if !floatingEdit}
+    {#if !floatingEdit && !readOnly}
       <button
         type="button"
         class="absolute right-2 top-2 z-10 inline-flex items-center justify-center rounded-md border border-neutral-200/70 bg-white/80 p-1.5 text-neutral-600 opacity-80 shadow-sm transition-colors hover:bg-neutral-100 hover:opacity-100 dark:border-neutral-700/70 dark:bg-neutral-900/70 dark:text-neutral-300 dark:hover:bg-neutral-800"
@@ -641,7 +650,7 @@
     <div
       bind:this={previewEl}
       role="presentation"
-      data-md-sections="persist"
+      data-md-sections={readOnly ? undefined : "persist"}
       style="min-height: {minHeight};"
       class="markdown-body w-full overflow-x-hidden rounded-md px-3 py-2 text-sm leading-relaxed text-neutral-800 dark:text-neutral-200"
       onclick={onPreviewClick}
@@ -649,7 +658,7 @@
     >
       {@html rendered}
     </div>
-    {#if outline && headings.length >= 2}
+    {#if outline && headings.length >= 2 && !app.splitOpen}
       <!-- Floating heading outline for long documents (wide windows only). -->
       <nav
         class="fixed right-5 top-24 z-10 hidden w-52 xl:block"
@@ -675,7 +684,7 @@
         </ul>
       </nav>
     {/if}
-    {#if isLarge && !floatingEdit}
+    {#if isLarge && !floatingEdit && !readOnly}
       <div class="mt-2 flex justify-center">
         <button
           type="button"
@@ -689,7 +698,7 @@
         </button>
       </div>
     {/if}
-    {#if floatingEdit}
+    {#if floatingEdit && !readOnly}
       <!-- One floating Edit FAB in the bottom-right — always reachable while
            reading, replacing the inline top/bottom buttons (notes). -->
       <button
@@ -706,6 +715,10 @@
       </button>
     {/if}
   </div>
+{:else if readOnly}
+  <p class="px-3 py-2 text-sm italic text-neutral-400 dark:text-neutral-500">
+    (empty)
+  </p>
 {:else}
   <button
     type="button"
