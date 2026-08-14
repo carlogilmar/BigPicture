@@ -24,7 +24,6 @@
   import StoryboardView from "$lib/components/StoryboardView.svelte";
   import SecondaryPane from "$lib/components/SecondaryPane.svelte";
 
-  let sidebar: Sidebar | undefined = $state();
   let inspectorTodo = $derived(app.selectedTodo());
 
   // Split (reference) pane: draggable divider between the main + reference pane.
@@ -98,29 +97,20 @@
     return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT";
   }
 
+  // A deliberately small, Stream-Deck-friendly shortcut set (Sprint 65). Only
+  // ⌘1–⌘8 map to the eight "important feature" actions; ⌘K (palette), Esc
+  // (dismiss) and ? (help) are the only other keys the app claims.
   function handleKeydown(e: KeyboardEvent) {
     app.touchVault(); // reset the vault idle-lock timer on any activity
     const mod = e.metaKey || e.ctrlKey;
+
+    // Command palette — the universal finder / fallback for everything else.
     if (mod && (e.key === "k" || e.key === "K")) {
       e.preventDefault();
       app.paletteOpen = !app.paletteOpen;
       return;
     }
-    if (mod && e.key === "f" && !e.shiftKey) {
-      e.preventDefault();
-      sidebar?.focus();
-      return;
-    }
-    if (mod && e.key === "[") {
-      e.preventDefault();
-      app.back();
-      return;
-    }
-    if (mod && e.key === "\\") {
-      e.preventDefault();
-      app.toggleSidebar();
-      return;
-    }
+
     if (!mod) {
       if (e.key === "Escape") {
         if (app.helpOpen) {
@@ -137,55 +127,41 @@
       }
       return;
     }
-    if (e.key === "n" && !e.shiftKey) {
-      e.preventDefault();
-      app.newList();
-    } else if (e.key === "e" && !e.shiftKey) {
-      e.preventDefault();
-      if (app.view === "list") app.saveCurrent();
-    } else if (e.shiftKey && (e.key === "C" || e.key === "c")) {
-      e.preventDefault();
-      if (app.view === "list") app.copyCurrent();
-    } else if (e.shiftKey && (e.key === "T" || e.key === "t")) {
-      // ⌘⇧T — today's list (if one exists)
-      e.preventDefault();
-      void app.openTodayList();
-    } else if (e.shiftKey && (e.key === "B" || e.key === "b")) {
-      // ⌘⇧B — new blueprint
-      e.preventDefault();
-      void app.newBlueprint("Untitled blueprint");
-    } else if (e.shiftKey && (e.key === "N" || e.key === "n")) {
-      // ⌘⇧N — new note (⌘N without shift is still new list)
-      e.preventDefault();
-      void app.newNote();
-    } else if (e.shiftKey && (e.key === "S" || e.key === "s")) {
-      // ⌘⇧S — Summary
-      e.preventDefault();
-      void app.openIndex();
-    } else if (e.key === "1") {
-      e.preventDefault();
-      app.goHome(true);
-    } else if (e.key === "2") {
-      e.preventDefault();
-      app.openBlueprints();
-    } else if (e.key === "3") {
-      e.preventDefault();
-      app.openIndex();
-    } else if (e.key === "4") {
-      e.preventDefault();
-      app.openMirror();
-    } else if (e.key === "5") {
-      e.preventDefault();
-      app.openFeedback();
-    } else if (e.key === "6") {
-      e.preventDefault();
-      app.openActivity();
-    } else if (e.key === "7") {
-      e.preventDefault();
-      app.openFlashDeck();
-    } else if (e.key === "8") {
-      e.preventDefault();
-      app.openPasswords();
+
+    // ⌘1–⌘8 — the eight feature shortcuts.
+    switch (e.key) {
+      case "1": // Home
+        e.preventDefault();
+        app.goHome(true);
+        break;
+      case "2": // Add — new entity picker
+        e.preventDefault();
+        app.addModalOpen = true;
+        break;
+      case "3": // The Mirror
+        e.preventDefault();
+        app.openMirror();
+        break;
+      case "4": // Activity
+        e.preventDefault();
+        app.openActivity();
+        break;
+      case "5": // Passwords vault
+        e.preventDefault();
+        app.openPasswords();
+        break;
+      case "6": // Screensaver (Focus mode)
+        e.preventDefault();
+        app.enterFocus();
+        break;
+      case "7": // Split view
+        e.preventDefault();
+        app.toggleSplit();
+        break;
+      case "8": // Random sidebar theme
+        e.preventDefault();
+        theme.randomSidebarTint();
+        break;
     }
   }
 </script>
@@ -194,7 +170,7 @@
 
 <div class="flex h-screen overflow-hidden">
   {#if !app.sidebarCollapsed}
-    <Sidebar bind:this={sidebar} />
+    <Sidebar />
   {/if}
   <div class="flex min-w-0 flex-1 flex-col overflow-hidden">
     <!-- Reserved top toolbar row: holds the nav menu so it never overlaps the
@@ -233,9 +209,8 @@
         <button
           type="button"
           class="flex h-8 w-8 items-center justify-center rounded-md border border-neutral-200/60 bg-white/70 text-neutral-500 shadow-sm backdrop-blur transition-colors hover:bg-neutral-100 dark:border-neutral-700/60 dark:bg-neutral-900/70 dark:text-neutral-400 dark:hover:bg-neutral-800"
-          class:text-blue-500={app.splitOpen}
-          class:dark:text-blue-400={app.splitOpen}
-          title="Reference pane — show a note, blueprint or board alongside"
+          style:color={app.splitOpen ? "var(--accent)" : undefined}
+          title="Split view — reference pane (⌘7)"
           aria-label="Toggle reference pane"
           onclick={() => app.toggleSplit()}
         >

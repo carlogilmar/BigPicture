@@ -343,7 +343,7 @@
       <div class="mt-1.5 flex justify-end">
         <button
           type="button"
-          class="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-40"
+          class="btn-accent rounded-md px-3 py-1.5 text-xs font-medium disabled:opacity-40"
           disabled={commentDraft.trim().length === 0}
           onclick={submitComment}
         >

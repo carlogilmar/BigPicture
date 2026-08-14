@@ -5,47 +5,26 @@
   type Section = { title: string; items: { keys: string; label: string }[] };
   const sections: Section[] = [
     {
-      title: "Find & navigate",
+      title: "Shortcuts (Stream Deck friendly)",
+      items: [
+        { keys: "⌘ 1", label: "Home" },
+        { keys: "⌘ 2", label: "Add — create a new entity" },
+        { keys: "⌘ 3", label: "The Mirror — a portrait of your library" },
+        { keys: "⌘ 4", label: "Activity — when you've worked" },
+        { keys: "⌘ 5", label: "Passwords — encrypted vault" },
+        { keys: "⌘ 6", label: "Screensaver — Focus mode" },
+        { keys: "⌘ 7", label: "Split view — reference pane" },
+        { keys: "⌘ 8", label: "Random sidebar theme" },
+      ],
+    },
+    {
+      title: "Always available",
       items: [
         { keys: "⌘ K", label: "Search everything · jump anywhere (command palette)" },
-        { keys: "⌘ 1", label: "Home — today & activity" },
-        { keys: "⌘ 2", label: "Blueprints — design canvases" },
-        { keys: "⌘ 3", label: "Library — everything you've made" },
-        { keys: "⌘ 4", label: "The Mirror — a portrait of your library" },
-        { keys: "⌘ 5", label: "Feedback — kanban boards" },
-        { keys: "⌘ 6", label: "Activity — when you've worked" },
-        { keys: "⌘ 7", label: "Flash Deck — flashcards" },
-        { keys: "⌘ 8", label: "Passwords — encrypted vault" },
-        { keys: "⌘ [", label: "Back to the previous view" },
-        { keys: "⌘ \\", label: "Collapse / show the sidebar" },
-      ],
-    },
-    {
-      title: "Quick actions (Stream Deck friendly)",
-      items: [
-        { keys: "⌘ ⇧ T", label: "Open today's list (if one exists)" },
-        { keys: "⌘ ⇧ N", label: "New note" },
-        { keys: "⌘ ⇧ B", label: "New blueprint" },
-        { keys: "⌘ ⇧ S", label: "Library" },
-      ],
-    },
-    {
-      title: "Lists & editing",
-      items: [
-        { keys: "⌘ N", label: "New list (today)" },
-        { keys: "⌘ F", label: "Focus the sidebar todo search" },
-        { keys: "⌘ E", label: "Save current list as .md" },
-        { keys: "⌘ ⇧ C", label: "Copy current list to clipboard" },
-        { keys: "Tab", label: "Indent (inserts spaces) in editors" },
-        { keys: "⌘ ↩", label: "Submit comment · description" },
-        { keys: "Enter", label: "Commit edit" },
-        { keys: "Esc", label: "Cancel edit · close panel · close help" },
-      ],
-    },
-    {
-      title: "General",
-      items: [
         { keys: "?", label: "Show / hide this help" },
+        { keys: "Esc", label: "Cancel edit · close panel · close help" },
+        { keys: "Enter", label: "Commit edit" },
+        { keys: "Tab", label: "Indent (inserts spaces) in editors" },
       ],
     },
   ];

@@ -411,7 +411,34 @@ numbered, applied at startup. To add one:
 4. Run `pnpm tauri dev` once to confirm migrations apply cleanly on
    your machine.
 
-Last updated: end of Sprint 64 (Reference list blocks — two powered-markdown blocks that render a
+Last updated: end of Sprint 65 (Check-in polish · animated canvas tints · theme accent · shortcut
+cleanup — a UX/theming grab-bag. (1) CAMERA CHECK-INS: `captureCheckinGif` now shows a small
+non-invasive live PREVIEW (bottom-right, mirrored) with a 3→2→1 COUNTDOWN so you can frame yourself,
+and burns a DATE STAMP into each frame (`checkinStamp(new Date())` → "Thursday · Aug 14, 2026", drawn
+after the mirror transform); the gallery gained a per-GIF DOWNLOAD button (native Save As →
+`read_binary_file` + `save_binary_file`; the opener-plugin open-folder/reveal path was blocked by
+scope so it was dropped). (2) THREE ANIMATED CANVAS TINTS — `SidebarFx.svelte`, a hand-rolled
+`<canvas>`+rAF loop (no lib, like the Mirror/aurora) in the same `z-index:-1` backdrop slot:
+**glitter** (drifting twinkling dots + shimmer), **fireworks** (starbursts w/ trailing gravity
+sparks), **meteor** (starfield + shooting-star streaks). New `SIDEBAR_TINTS` entries w/ an `fx` field
++ `base`; `theme.sidebarFx` (light-only, like aurora) renders it in the Sidebar; reduced-motion → one
+static frame; `{#key}` remounts on switch. (3) SCREENSAVER: Focus mode fills its stage with the
+selected tint's canvas fx when it's an fx tint (`theme.selectedFx`, works in light AND dark since the
+stage is always dark), else the aurora backdrop; plus a prominent accent-filled **Enter Focus** button
+in the sidebar footer. (4) THEME ACCENT: each tint contributes an `accent` (`tintAccent`; hue tints
+derive it, others explicit) published as `--accent` on `<html>` (both modes); new `.btn-accent`
+(app.css: `var(--accent)` fill, white text, `color-mix` hover) swept across ALL primary CTAs (sidebar
+Add/Enter-Focus, Home new-list, Library +New, AddEntityModal, note Edit FAB, Storyboard Save PNG,
+Flash Deck, Passwords, feedback Save) — so buttons follow the tint (Fireworks=red, Meteor=blue, …).
+The TopNav toolbar also recolors (hub pills + active icon + split-active use `--accent`); selection
+row highlights left blue by design. (5) SHORTCUTS trimmed to a Stream-Deck set — ⌘1 Home · ⌘2 Add ·
+⌘3 Mirror · ⌘4 Activity · ⌘5 Passwords · ⌘6 Screensaver · ⌘7 Split view · ⌘8 Random theme; removed
+⌘F/⌘[/⌘\\/⌘N/⌘E/⌘⇧C/T/B/N/S + old ⌘2/3/5/7 view-nav (still reachable via TopNav + palette); kept
+⌘K/Esc/?/Enter/Tab. HelpModal, CommandPalette hints, and TopNav tooltips updated to match; the TopNav
+**Focus icon was removed** (now in the sidebar). (6) Removed the sidebar **build/commit** footer
+(`__APP_COMMIT__*`). Frontend + one backend command, no migration; svelte-check + cargo check + build
+pass; the preview/stamp/save-dialog + canvas anims + toolbar recolor need a live webview run. See
+documentation/SPRINT65.md. — earlier: Sprint 64 (Reference list blocks — two powered-markdown blocks that render a
 list of internal entity links as a distinct "related items" component instead of the generic blue
 link-chips. Both parse the same body (one `[label](kind:id)` per line, an optional `- `/`* `/`1. `
 list marker tolerated; labels are authored inline so they render SYNCHRONOUSLY like list/files/stats,

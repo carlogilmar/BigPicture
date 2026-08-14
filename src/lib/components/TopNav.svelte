@@ -33,7 +33,7 @@
     {
       key: "index",
       title: "Library",
-      sc: "⌘3",
+      sc: "",
       hue: 217,
       d: "M3 5a2 2 0 012-2h10a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V5zm3 2a1 1 0 100 2h8a1 1 0 100-2H6zm0 4a1 1 0 100 2h8a1 1 0 100-2H6zm0 4a1 1 0 100 2h5a1 1 0 100-2H6z",
       go: () => app.openIndex(),
@@ -47,7 +47,7 @@
     {
       key: "mirror",
       title: "The Mirror",
-      sc: "⌘4",
+      sc: "⌘3",
       hue: 320,
       d: "M10 2a6 6 0 016 6c0 2.6-1.7 4.8-4 5.6V16a1 1 0 01-1 1H9a1 1 0 01-1-1v-2.4C5.7 12.8 4 10.6 4 8a6 6 0 016-6zm0 2a4 4 0 00-4 4c0 1.9 1.3 3.4 3 3.9V8a1 1 0 112 0v3.9c1.7-.5 3-2 3-3.9a4 4 0 00-4-4z",
       go: () => app.openMirror(),
@@ -56,7 +56,7 @@
     {
       key: "activity",
       title: "Activity",
-      sc: "⌘6",
+      sc: "⌘4",
       hue: 30,
       d: "M3 3h6v6H3V3zm0 8h6v6H3v-6zm8-8h6v6h-6V3zm0 8h6v6h-6v-6z",
       go: () => app.openActivity(),
@@ -65,7 +65,7 @@
     {
       key: "flashdeck",
       title: "Flash Deck",
-      sc: "⌘7",
+      sc: "",
       hue: 175,
       d: "M5 4a2 2 0 00-2 2v7a2 2 0 002 2h1V6a2 2 0 012-2h6a2 2 0 00-2-2H5zm4 3a2 2 0 00-2 2v7a2 2 0 002 2h6a2 2 0 002-2V9a2 2 0 00-2-2H9zm1 3a1 1 0 100 2h4a1 1 0 100-2h-4z",
       go: () => app.openFlashDeck(),
@@ -74,7 +74,7 @@
     {
       key: "passwords",
       title: "Passwords",
-      sc: "⌘8",
+      sc: "⌘5",
       hue: 45,
       d: "M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm2-2v2h6V7a3 3 0 00-6 0zm3 5a1 1 0 00-1 1v2a1 1 0 102 0v-2a1 1 0 00-1-1z",
       go: () => app.openPasswords(),
@@ -87,13 +87,19 @@
   const inactive =
     "text-neutral-500 hover:bg-neutral-200/70 dark:text-neutral-400 dark:hover:bg-neutral-700/60";
 
-  let isDark = $derived(theme.resolved === "dark");
 
   function swatchColor(tint: {
     hue: number | null;
     dark?: boolean;
     aurora?: string[];
+    fx?: string;
   }): string {
+    if (tint.fx === "glitter")
+      return "linear-gradient(135deg, #2a1f4d, #e8c76a 55%, #b98bff)";
+    if (tint.fx === "fireworks")
+      return "linear-gradient(135deg, #0a1030, #ff6b6b 45%, #ffd166 70%, #7c9bff)";
+    if (tint.fx === "meteor")
+      return "linear-gradient(135deg, #0a1226, #7dd3fc 70%, #ffffff)";
     if (tint.aurora) {
       return `linear-gradient(135deg, ${tint.aurora.join(", ")})`;
     }
@@ -114,7 +120,7 @@
     <button
       type="button"
       class="{btn} {inactive}"
-      title="Back — ⌘["
+      title="Back"
       aria-label="Back"
       onclick={() => app.back()}
     >
@@ -136,10 +142,10 @@
       type="button"
       class="{btn} transition-colors"
       style:background={on
-        ? `hsl(${item.hue} 70% ${isDark ? 50 : 45}%)`
-        : `hsl(${item.hue} 70% ${isDark ? 55 : 45}% / ${isDark ? 0.2 : 0.12})`}
-      style:color={on ? "white" : `hsl(${item.hue} 70% ${isDark ? 70 : 38}%)`}
-      title={`${item.title} — ${item.sc}`}
+        ? "var(--accent)"
+        : "color-mix(in srgb, var(--accent) 14%, transparent)"}
+      style:color={on ? "#fff" : "var(--accent)"}
+      title={item.sc ? `${item.title} — ${item.sc}` : item.title}
       aria-label={item.title}
       onclick={item.go}
     >
@@ -158,8 +164,8 @@
       class="{btn} {on
         ? 'bg-neutral-200/80 dark:bg-neutral-700/70'
         : inactive}"
-      style:color={on ? `hsl(${item.hue} 70% 45%)` : undefined}
-      title={`${item.title} — ${item.sc}`}
+      style:color={on ? "var(--accent)" : undefined}
+      title={item.sc ? `${item.title} — ${item.sc}` : item.title}
       aria-label={item.title}
       onclick={item.go}
     >
@@ -170,23 +176,6 @@
   {/each}
 
   <span class="mx-0.5 h-5 w-px bg-neutral-200/80 dark:bg-neutral-700/80"></span>
-
-  <!-- Focus mode (aurora screensaver of today's list) -->
-  <button
-    type="button"
-    class="{btn} {inactive}"
-    title="Focus mode"
-    aria-label="Focus mode"
-    onclick={() => app.enterFocus()}
-  >
-    <svg viewBox="0 0 20 20" fill="currentColor" class="h-4 w-4">
-      <path
-        fill-rule="evenodd"
-        d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.958a1 1 0 00.95.69h4.162c.969 0 1.371 1.24.588 1.81l-3.368 2.446a1 1 0 00-.363 1.118l1.287 3.958c.3.922-.755 1.688-1.539 1.118l-3.367-2.447a1 1 0 00-1.176 0l-3.367 2.447c-.783.57-1.838-.196-1.539-1.118l1.286-3.958a1 1 0 00-.363-1.118L2.05 9.385c-.783-.57-.38-1.81.588-1.81h4.162a1 1 0 00.95-.69l1.286-3.958z"
-        clip-rule="evenodd"
-      />
-    </svg>
-  </button>
 
   <!-- Theme cycle -->
   <button
@@ -268,7 +257,7 @@
     <button
       type="button"
       class="mt-3 flex w-full items-center justify-center gap-1.5 rounded-md border border-neutral-200/70 px-2 py-1.5 text-xs font-medium text-neutral-600 transition-colors hover:bg-neutral-100 dark:border-neutral-700/70 dark:text-neutral-300 dark:hover:bg-neutral-800"
-      title="Pick a random sidebar color"
+      title="Random sidebar color — ⌘8"
       onclick={() => theme.randomSidebarTint()}
     >
       <svg viewBox="0 0 20 20" fill="currentColor" class="h-3.5 w-3.5">

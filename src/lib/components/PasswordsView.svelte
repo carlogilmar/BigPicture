@@ -149,7 +149,7 @@
           class="rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-500/20 dark:border-neutral-700 dark:bg-neutral-900" />
         {#if unlockError}<p class="text-xs text-red-500">The two passwords don't match.</p>{/if}
         <button type="submit" disabled={busy || !pw}
-          class="mt-1 self-start rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-blue-700 disabled:opacity-50 dark:bg-blue-500 dark:hover:bg-blue-600">
+          class="mt-1 self-start btn-accent rounded-lg px-4 py-2 text-sm font-medium shadow-sm transition-colors disabled:opacity-50">
           Create vault
         </button>
       </form>
@@ -163,7 +163,7 @@
         <input type="password" bind:value={pw} placeholder="Master password" autocomplete="current-password" autofocus
           class="flex-1 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-500/20 dark:border-neutral-700 dark:bg-neutral-900" />
         <button type="submit" disabled={busy || !pw}
-          class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-blue-700 disabled:opacity-50 dark:bg-blue-500 dark:hover:bg-blue-600">
+          class="btn-accent rounded-lg px-4 py-2 text-sm font-medium shadow-sm transition-colors disabled:opacity-50">
           Unlock
         </button>
       </form>
@@ -189,7 +189,7 @@
         </button>
       </div>
       <button type="submit" disabled={!newTitle.trim() || !newPw}
-        class="self-start rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-blue-700 disabled:opacity-50 dark:bg-blue-500 dark:hover:bg-blue-600">
+        class="self-start btn-accent rounded-lg px-4 py-2 text-sm font-medium shadow-sm transition-colors disabled:opacity-50">
         Add
       </button>
     </form>

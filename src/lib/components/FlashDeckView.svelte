@@ -93,7 +93,7 @@
     <div class="flex items-center gap-2">
       <input bind:value={search} type="search" placeholder="Search…" class="w-40 rounded-md border border-neutral-300/60 bg-white/60 px-2 py-1 text-xs outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-500/20 dark:border-neutral-700/60 dark:bg-neutral-900/40 dark:text-neutral-100" />
       <button type="button" class="rounded-md border border-neutral-300/70 px-2.5 py-1 text-xs text-neutral-600 hover:bg-neutral-100 disabled:opacity-40 dark:border-neutral-700/70 dark:text-neutral-300 dark:hover:bg-neutral-800" disabled={visible.length === 0} onclick={() => (studyOpen = true)}>Study</button>
-      <button type="button" class="rounded-md bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-700" onclick={newCard}>+ New card</button>
+      <button type="button" class="btn-accent rounded-md px-3 py-1 text-xs font-medium" onclick={newCard}>+ New card</button>
     </div>
   </header>
 
@@ -121,7 +121,7 @@
           </div>
           <div class="mt-2 flex gap-1.5 border-t border-neutral-200/60 pt-2 dark:border-neutral-700/60">
             <input bind:value={newCatName} placeholder="New category" onkeydown={(e) => { if (e.key === 'Enter') addCategory(); }} class="min-w-0 flex-1 rounded border border-neutral-300/60 bg-white px-2 py-1 text-xs outline-none dark:border-neutral-700/60 dark:bg-neutral-900/40" />
-            <button type="button" class="rounded bg-blue-600 px-2 py-1 text-xs font-medium text-white hover:bg-blue-700" onclick={addCategory}>Add</button>
+            <button type="button" class="btn-accent rounded px-2 py-1 text-xs font-medium" onclick={addCategory}>Add</button>
           </div>
         </div>
       {/if}

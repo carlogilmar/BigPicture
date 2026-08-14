@@ -4,6 +4,7 @@
   import { theme } from "$lib/stores/theme.svelte";
   import { checkinSrc } from "$lib/ipc";
   import CheckinLightbox from "$lib/components/CheckinLightbox.svelte";
+  import SidebarFx from "$lib/components/SidebarFx.svelte";
 
   // Check-in(s) for today's list, shown as a miniature on the stage.
   let focusCheckins = $derived(
@@ -124,17 +125,24 @@
   aria-modal="true"
   aria-label="Focus mode"
 >
-  <!-- Aurora backdrop: drifting blurred blobs + a noise grain (mirrors the
-       Sprint 23 sidebar treatment). -->
-  <div class="aurora" aria-hidden="true">
-    {#each auroraColors as c, i (i)}
-      <div
-        class="aurora-blob aurora-blob-{i}"
-        style="background: radial-gradient(circle at 50% 50%, {c} 0%, transparent 65%);"
-      ></div>
-    {/each}
-    <div class="aurora-noise"></div>
-  </div>
+  <!-- Backdrop: when the active tint is a canvas-fx one (Glitter / Fireworks /
+       Meteor), fill the stage with that animation; otherwise the aurora blobs
+       + noise grain (mirrors the Sprint 23 sidebar treatment). -->
+  {#if theme.selectedFx}
+    {#key theme.selectedFx}
+      <SidebarFx fx={theme.selectedFx} />
+    {/key}
+  {:else}
+    <div class="aurora" aria-hidden="true">
+      {#each auroraColors as c, i (i)}
+        <div
+          class="aurora-blob aurora-blob-{i}"
+          style="background: radial-gradient(circle at 50% 50%, {c} 0%, transparent 65%);"
+        ></div>
+      {/each}
+      <div class="aurora-noise"></div>
+    </div>
+  {/if}
 
   <!-- Exit -->
   <button

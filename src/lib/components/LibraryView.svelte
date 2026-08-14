@@ -217,7 +217,7 @@ if (k === "note") app.deleteNoteById(id);
         title="List" onclick={() => (view = "list")}>≣</button>
     </div>
     <button
-      class="rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
+      class="btn-accent rounded-lg px-3 py-2 text-sm font-semibold"
       onclick={() => (app.addModalOpen = true)}
     >+ New</button>
   </div>

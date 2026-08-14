@@ -635,7 +635,7 @@
       title="Finish editing — show the rendered note"
       aria-label="Finish editing"
       style={fabStyle}
-      class="{fabPos} bottom-6 right-6 z-20 inline-flex items-center gap-2 rounded-full bg-blue-600 px-4 py-2.5 text-sm font-medium text-white shadow-lg transition-colors hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
+      class="{fabPos} bottom-6 right-6 z-20 inline-flex items-center gap-2 rounded-full btn-accent px-4 py-2.5 text-sm font-medium shadow-lg transition-colors"
     >
       <svg viewBox="0 0 20 20" fill="currentColor" class="h-4 w-4"><path fill-rule="evenodd" d="M16.7 5.3a1 1 0 010 1.4l-7.5 7.5a1 1 0 01-1.4 0L4.3 10.7a1 1 0 011.4-1.4l2.8 2.79 6.8-6.79a1 1 0 011.4 0z" clip-rule="evenodd"/></svg>
       Done

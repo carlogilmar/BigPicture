@@ -579,7 +579,7 @@
         </div>
         <div class="absolute left-1/2 top-4 z-40 flex -translate-x-1/2 items-center gap-2">
           <span class="rounded-md bg-neutral-900/80 px-3 py-1.5 text-xs text-white backdrop-blur dark:bg-neutral-100/90 dark:text-neutral-900">Drag the frame around what you want to export</span>
-          <button type="button" class="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-blue-700 disabled:opacity-60" disabled={exporting} onclick={doExport}>{exporting ? "Working…" : "Save PNG"}</button>
+          <button type="button" class="btn-accent rounded-md px-3 py-1.5 text-xs font-semibold shadow-sm disabled:opacity-60" disabled={exporting} onclick={doExport}>{exporting ? "Working…" : "Save PNG"}</button>
           <button type="button" class="rounded-md border border-blue-300/70 bg-white/90 px-3 py-1.5 text-xs font-semibold text-blue-700 shadow-sm hover:bg-blue-50 disabled:opacity-60 dark:border-blue-700/70 dark:bg-neutral-900/85 dark:text-blue-200" disabled={exporting} onclick={doCopy}>Copy</button>
           <button type="button" class="rounded-md border border-neutral-300/70 bg-white/90 px-3 py-1.5 text-xs text-neutral-700 hover:bg-neutral-100 dark:border-neutral-600/70 dark:bg-neutral-900/85 dark:text-neutral-200" onclick={() => (exportMode = false)}>Cancel</button>
         </div>

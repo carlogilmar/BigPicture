@@ -3,16 +3,12 @@
   import { app, todayIso } from "$lib/stores/app.svelte";
   import { theme } from "$lib/stores/theme.svelte";
   import TagBadges from "$lib/components/TagBadges.svelte";
+  import SidebarFx from "$lib/components/SidebarFx.svelte";
   import { reveal } from "$lib/anim";
 
   let query = $state("");
   let searchInput: HTMLInputElement | undefined = $state();
   let logoFailed = $state(false);
-
-  const commitHash = __APP_COMMIT__;
-  const commitMessage = __APP_COMMIT_MESSAGE__;
-  const commitDate = __APP_COMMIT_DATE__;
-  let commitOpen = $state(false);
 
   // Editable app-brand label (Sprint 31).
   let editingBrand = $state(false);
@@ -42,11 +38,6 @@
     }
   }
 
-  let commitDatePretty = $derived(
-    commitDate
-      ? new Date(commitDate).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })
-      : "",
-  );
 
   // Debounced search
   $effect(() => {
@@ -221,6 +212,10 @@
       {/each}
       <div class="aurora-noise"></div>
     </div>
+  {:else if theme.sidebarFx}
+    {#key theme.sidebarFx}
+      <SidebarFx fx={theme.sidebarFx} />
+    {/key}
   {/if}
 
   <div class="relative mb-3 flex flex-col items-center pt-0.5" use:reveal={{ delay: 30 }}>
@@ -325,7 +320,7 @@
       </button>
 
       <!-- + Add -->
-      <button type="button" class="add-btn mb-4 flex w-full items-center justify-center gap-1.5 rounded-lg bg-blue-600 px-2 py-2 text-sm font-semibold text-white shadow-sm transition-[transform,box-shadow] hover:bg-blue-700 hover:shadow-md active:translate-y-px dark:bg-blue-700 dark:hover:bg-blue-600" onclick={() => (app.addModalOpen = true)} use:reveal={{ delay: 190 }}>
+      <button type="button" title="Add a new entity — ⌘2" class="add-btn btn-accent mb-4 flex w-full items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-sm font-semibold shadow-sm transition-[transform,box-shadow] hover:shadow-md active:translate-y-px" onclick={() => (app.addModalOpen = true)} use:reveal={{ delay: 190 }}>
         <svg viewBox="0 0 20 20" fill="currentColor" class="h-4 w-4"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>
         Add
       </button>
@@ -381,6 +376,11 @@
     {/if}
   </nav>
 
+  <button type="button" class="btn-accent mt-2 flex w-full items-center justify-center gap-2 rounded-lg px-2 py-2 text-[11px] font-semibold uppercase tracking-wide shadow-sm transition-all hover:shadow-md" title="Enter Focus mode / screensaver — ⌘6" onclick={() => app.enterFocus()}>
+    <svg viewBox="0 0 20 20" fill="currentColor" class="h-4 w-4 shrink-0"><path d="M10 2.5l1.6 3.9 4.2.3-3.2 2.7 1 4.1L10 11.9l-3.6 2.3 1-4.1-3.2-2.7 4.2-.3L10 2.5zM4 14.5l.7 1.7 1.8.1-1.4 1.2.5 1.8L4 18.3l-1.6 1 .5-1.8-1.4-1.2 1.8-.1.7-1.7zM16 13l.6 1.4 1.5.1-1.2 1 .4 1.5-1.3-.8-1.3.8.4-1.5-1.2-1 1.5-.1.6-1.4z" /></svg>
+    <span>Enter Focus</span>
+  </button>
+
   <div class="mt-2 border-t border-neutral-300/40 px-2 pt-2 text-[11px] text-neutral-400 dark:border-neutral-700/40 dark:text-neutral-500">
     <div class="group relative mb-2 flex items-center justify-center">
       {#if editingBrand}
@@ -396,27 +396,6 @@
       <span>Shortcuts</span>
       <span class="font-mono text-[10px]">?</span>
     </button>
-    <div class="relative">
-      <button type="button" class="mt-1.5 flex w-full items-center justify-between rounded px-1 py-0.5 text-[10px] text-neutral-300 transition-colors hover:bg-neutral-200/60 hover:text-neutral-600 dark:text-neutral-600 dark:hover:bg-neutral-700/40 dark:hover:text-neutral-300" title="Show the commit this build was made from" onclick={() => (commitOpen = !commitOpen)}>
-        <span>build</span>
-        <span class="font-mono">{commitHash}</span>
-      </button>
-      {#if commitOpen}
-        <button type="button" class="fixed inset-0 z-40 cursor-default" aria-label="Close commit details" onclick={() => (commitOpen = false)}></button>
-        <div class="absolute bottom-7 left-0 right-0 z-50 rounded-lg border border-neutral-200/70 bg-white/95 p-3 text-left shadow-lg backdrop-blur dark:border-neutral-700/70 dark:bg-neutral-900/95">
-          <div class="mb-1 flex items-center justify-between gap-2">
-            <span class="text-[10px] font-medium uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Build commit</span>
-            <span class="select-text font-mono text-[10px] text-neutral-500 dark:text-neutral-400">{commitHash}</span>
-          </div>
-          {#if commitDatePretty}<p class="mb-1.5 text-[10px] text-neutral-400 dark:text-neutral-500">{commitDatePretty}</p>{/if}
-          {#if commitMessage}
-            <pre class="max-h-48 overflow-y-auto whitespace-pre-wrap break-words font-sans text-[11px] leading-relaxed text-neutral-700 dark:text-neutral-200">{commitMessage}</pre>
-          {:else}
-            <p class="text-[11px] italic text-neutral-400 dark:text-neutral-500">No commit message available.</p>
-          {/if}
-        </div>
-      {/if}
-    </div>
   </div>
 </aside>
 

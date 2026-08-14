@@ -41,9 +41,29 @@
 :root {
   --sidebar-bg: transparent;
   --sidebar-border: rgba(212, 212, 212, 0.4);
+  /* Primary-action accent — overridden per selected tint by the theme store. */
+  --accent: #2563eb;
 }
 html.dark {
   --sidebar-border: rgba(115, 115, 115, 0.25);
+}
+
+/* Themed primary button: fills with the selected theme's accent (var(--accent))
+   instead of a hardcoded blue, so CTAs across the app follow the tint. Replaces
+   the old `bg-blue-600 hover:bg-blue-700 text-white` cluster on primary buttons;
+   keep every other utility (rounded/padding/font) on the element. */
+.btn-accent {
+  background-color: var(--accent);
+  color: #fff;
+}
+.btn-accent:hover {
+  background-color: color-mix(in srgb, var(--accent) 87%, #000);
+}
+.btn-accent:active {
+  background-color: color-mix(in srgb, var(--accent) 78%, #000);
+}
+.btn-accent:disabled:hover {
+  background-color: var(--accent);
 }
 
 /* Vibrancy is provided by the native NSVisualEffectView underneath the

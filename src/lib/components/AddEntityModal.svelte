@@ -136,7 +136,7 @@
       </button>
       <button
         type="button"
-        class="rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-blue-700"
+        class="btn-accent rounded-md px-3 py-1.5 text-sm font-medium shadow-sm"
         onclick={submit}
       >
         Create

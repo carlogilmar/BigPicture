@@ -305,7 +305,7 @@
     </div>
     <button
       type="button"
-      class="rounded-lg bg-blue-600 px-3.5 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-blue-700 active:bg-blue-800 dark:bg-blue-500 dark:hover:bg-blue-600"
+      class="btn-accent rounded-lg px-3.5 py-2 text-sm font-medium shadow-sm transition-colors"
       onclick={headerAction}
     >
       {app.homeListId === null ? "＋ New list" : "Open today's list"}
@@ -344,7 +344,7 @@
     {#if app.homeListId === null}
       <div class="flex flex-col items-center gap-3 py-6 text-center">
         <p class="text-sm text-neutral-500 dark:text-neutral-400">No list for today yet. Start one to plan your day.</p>
-        <button type="button" class="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-400" onclick={() => app.createHomeToday()}>＋ Create today's list</button>
+        <button type="button" class="btn-accent rounded-lg px-4 py-2.5 text-sm font-semibold" onclick={() => app.createHomeToday()}>＋ Create today's list</button>
         {#if app.backlogPending > 0}
           <button type="button" class="text-xs text-neutral-400 hover:text-blue-600 dark:text-neutral-500 dark:hover:text-blue-400" onclick={() => app.openBacklog()}>
             You have <span class="font-semibold text-blue-500 dark:text-blue-400">{app.backlogPending}</span> {app.backlogPending === 1 ? "task" : "tasks"} in your backlog →
