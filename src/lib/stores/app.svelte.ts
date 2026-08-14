@@ -1,6 +1,6 @@
 import { confirm, save } from "@tauri-apps/plugin-dialog";
 import { theme } from "$lib/stores/theme.svelte";
-import { captureCheckinGif } from "$lib/checkin";
+import { captureCheckinGif, checkinStamp } from "$lib/checkin";
 import {
   listToday,
   listAll,
@@ -1833,7 +1833,7 @@ class AppStore {
     if (!theme.checkinsEnabled || this.capturingCheckin) return;
     this.capturingCheckin = true;
     try {
-      const bytes = await captureCheckinGif();
+      const bytes = await captureCheckinGif({ label: checkinStamp(new Date()) });
       const path = await saveImageBytes(Array.from(bytes), "gif");
       const created = await addCheckinIpc(path, listId);
       this.checkins = [created, ...this.checkins];
@@ -1852,7 +1852,7 @@ class AppStore {
     if (this.capturingCheckin) return;
     this.capturingCheckin = true;
     try {
-      const bytes = await captureCheckinGif();
+      const bytes = await captureCheckinGif({ label: checkinStamp(new Date()) });
       const path = await saveImageBytes(Array.from(bytes), "gif");
       // Remove existing check-ins for this list first (this replaces them).
       for (const c of this.checkins.filter((c) => c.listId === listId)) {

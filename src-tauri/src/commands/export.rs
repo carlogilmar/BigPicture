@@ -35,6 +35,16 @@ pub async fn save_binary_file(path: String, bytes: Vec<u8>) -> AppResult<()> {
     Ok(())
 }
 
+/// Read a file's raw bytes (used to "download" a check-in GIF: read it, then
+/// write it to a user-chosen path via the native save dialog).
+#[tauri::command]
+pub async fn read_binary_file(path: String) -> AppResult<Vec<u8>> {
+    if path.trim().is_empty() {
+        return Err(AppError::BadInput("path cannot be empty".into()));
+    }
+    std::fs::read(&path).map_err(Into::into)
+}
+
 // Copy a PNG (raw bytes) to the OS clipboard. WKWebView blocks
 // navigator.clipboard.write() for images (NotAllowedError), so the blueprint
 // "Copy PNG" path routes through here. `Image::from_bytes` decodes the PNG

@@ -47,6 +47,7 @@ pub fn run() {
             commands::export::export_range_md,
             commands::export::save_text_file,
             commands::export::save_binary_file,
+            commands::export::read_binary_file,
             commands::export::copy_image_to_clipboard,
             commands::search::search_todos,
             commands::search::list_all_todos,

@@ -2,10 +2,40 @@
   import { onMount } from "svelte";
   import { app } from "$lib/stores/app.svelte";
   import { theme } from "$lib/stores/theme.svelte";
-  import { checkinSrc, type WeeklyActivity } from "$lib/ipc";
+  import {
+    checkinSrc,
+    readBinaryFile,
+    saveBinaryFile,
+    type WeeklyActivity,
+  } from "$lib/ipc";
+  import { save } from "@tauri-apps/plugin-dialog";
   import CheckinLightbox from "$lib/components/CheckinLightbox.svelte";
 
   let lightboxIndex = $state<number | null>(null);
+  let downloadingId = $state<number | null>(null);
+
+  // "Download" a check-in GIF: read its bytes, then write a copy to a location
+  // the user picks via the native save dialog (so it's easy to share).
+  async function downloadCheckin(id: number, path: string, iso: string) {
+    if (downloadingId !== null) return;
+    downloadingId = id;
+    try {
+      const d = new Date(iso.replace(" ", "T") + "Z");
+      const stamp = d.toISOString().slice(0, 10);
+      const dest = await save({
+        defaultPath: `check-in-${stamp}.gif`,
+        filters: [{ name: "GIF", extensions: ["gif"] }],
+      });
+      if (!dest) return; // user cancelled
+      const bytes = await readBinaryFile(path);
+      await saveBinaryFile(dest, bytes);
+      app.setFlash("📥 Check-in saved");
+    } catch (e) {
+      app.setFlash(`Couldn't download: ${e}`);
+    } finally {
+      downloadingId = null;
+    }
+  }
 
   type Granularity = "year" | "halfyear" | "ytd";
   let granularity = $state<Granularity>("year");
@@ -271,15 +301,27 @@
         <div class="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-4">
           {#each app.checkins as c, i (c.id)}
             <figure class="group relative overflow-hidden rounded-xl border border-neutral-200/70 bg-black/5 dark:border-neutral-700/60 dark:bg-white/5">
-              <button
-                type="button"
-                title="Delete check-in"
-                aria-label="Delete check-in"
-                class="absolute right-1.5 top-1.5 z-10 rounded-full bg-black/50 p-1 text-white/90 opacity-0 transition-opacity hover:bg-red-600 group-hover:opacity-100"
-                onclick={() => app.deleteCheckin(c.id)}
-              >
-                <svg viewBox="0 0 20 20" fill="currentColor" class="h-4 w-4"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zm-1 6a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 112 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" /></svg>
-              </button>
+              <div class="absolute right-1.5 top-1.5 z-10 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                <button
+                  type="button"
+                  title="Download / share this GIF"
+                  aria-label="Download check-in GIF"
+                  class="rounded-full bg-black/50 p-1 text-white/90 transition-colors hover:bg-black/80 disabled:opacity-50"
+                  disabled={downloadingId === c.id}
+                  onclick={() => downloadCheckin(c.id, c.path, c.createdAt)}
+                >
+                  <svg viewBox="0 0 20 20" fill="currentColor" class="h-4 w-4"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v6.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 111.414-1.414L9 10.586V4a1 1 0 011-1zM4 15a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1z" clip-rule="evenodd" /></svg>
+                </button>
+                <button
+                  type="button"
+                  title="Delete check-in"
+                  aria-label="Delete check-in"
+                  class="rounded-full bg-black/50 p-1 text-white/90 transition-colors hover:bg-red-600"
+                  onclick={() => app.deleteCheckin(c.id)}
+                >
+                  <svg viewBox="0 0 20 20" fill="currentColor" class="h-4 w-4"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zm-1 6a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 112 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" /></svg>
+                </button>
+              </div>
               <button
                 type="button"
                 class="block w-full cursor-zoom-in"
