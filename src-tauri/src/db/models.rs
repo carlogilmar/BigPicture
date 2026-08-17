@@ -171,6 +171,18 @@ pub struct Checkin {
     pub created_at: String,
 }
 
+// Voice note (Sprint 66): an audio note recorded per todo list. `path` is the
+// absolute audio file path; `list_id` may be null (list deleted). Mirrors Checkin.
+#[derive(Debug, Clone, Serialize, FromRow)]
+#[serde(rename_all = "camelCase")]
+pub struct VoiceNote {
+    pub id: i64,
+    pub list_id: Option<i64>,
+    pub path: String,
+    pub duration_ms: i64,
+    pub created_at: String,
+}
+
 // Passwords vault (Sprint 41). `SecretMeta` is the safe listing shape — id +
 // plaintext title only, never the password. `VaultStatus` drives the UI gate.
 #[derive(Debug, Clone, Serialize, FromRow)]

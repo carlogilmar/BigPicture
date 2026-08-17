@@ -2,7 +2,7 @@
   import { fade } from "svelte/transition";
   import { flip } from "svelte/animate";
   import { app } from "$lib/stores/app.svelte";
-  import { checkinSrc } from "$lib/ipc";
+  import { checkinSrc, voiceNoteSrc } from "$lib/ipc";
   import TodoRow from "$lib/components/TodoRow.svelte";
   import IdChip from "$lib/components/IdChip.svelte";
   import CheckinLightbox from "$lib/components/CheckinLightbox.svelte";
@@ -18,6 +18,33 @@
   let listCheckins = $derived(
     app.selected ? app.checkins.filter((c) => c.listId === app.selected!.id) : [],
   );
+  // Voice notes recorded for this list (newest first).
+  let listVoiceNotes = $derived(
+    app.selected ? app.voiceNotes.filter((v) => v.listId === app.selected!.id) : [],
+  );
+  let recordingThis = $derived(
+    app.selected != null && app.recordingListId === app.selected.id,
+  );
+
+  // "1:04" from milliseconds.
+  function fmtDuration(ms: number): string {
+    const s = Math.round(ms / 1000);
+    const m = Math.floor(s / 60);
+    return `${m}:${String(s % 60).padStart(2, "0")}`;
+  }
+
+  // Live elapsed time while recording (ticks every 250ms from the store's start).
+  let recElapsed = $state(0);
+  $effect(() => {
+    if (!recordingThis) {
+      recElapsed = 0;
+      return;
+    }
+    const tick = () => (recElapsed = Date.now() - app.recordingStartedAt);
+    tick();
+    const id = setInterval(tick, 250);
+    return () => clearInterval(id);
+  });
   let total = $derived(app.todos.length);
   let done = $derived(app.todos.filter((t) => t.completed).length);
   let progressPct = $derived(total === 0 ? 0 : Math.round((done / total) * 100));
@@ -211,6 +238,33 @@
               </svg>
             {/if}
           </button>
+          <!-- Record / stop a voice note for this list. -->
+          {#if recordingThis}
+            <button
+              type="button"
+              class="flex items-center gap-1.5 rounded-md bg-red-600 px-2 py-1.5 text-xs font-medium text-white transition-colors hover:bg-red-700"
+              title="Stop recording & save"
+              aria-label="Stop recording"
+              onclick={() => app.stopVoiceNote()}
+            >
+              <span class="h-2.5 w-2.5 animate-pulse rounded-sm bg-white"></span>
+              Stop <span class="tabular-nums">{fmtDuration(recElapsed)}</span>
+            </button>
+          {:else}
+            <button
+              type="button"
+              class="rounded-md p-1.5 text-neutral-400 transition-colors hover:bg-neutral-200 hover:text-neutral-700 disabled:opacity-50 dark:text-neutral-500 dark:hover:bg-neutral-700 dark:hover:text-neutral-200"
+              disabled={app.recordingListId !== null}
+              title="Record a voice note"
+              aria-label="Record a voice note"
+              onclick={() => app.selected && app.startVoiceNote(app.selected.id)}
+            >
+              <svg viewBox="0 0 20 20" fill="currentColor" class="h-4 w-4">
+                <path d="M10 2a3 3 0 00-3 3v5a3 3 0 006 0V5a3 3 0 00-3-3z"/>
+                <path d="M5.5 9.5a.75.75 0 011.5 0 3 3 0 006 0 .75.75 0 011.5 0 4.5 4.5 0 01-3.75 4.44V16h2a.75.75 0 010 1.5h-5.5a.75.75 0 010-1.5h2v-2.06A4.5 4.5 0 015.5 9.5z"/>
+              </svg>
+            </button>
+          {/if}
         {/if}
         {#if !isBacklog}
         <button
@@ -322,6 +376,39 @@
         {/if}
       </div>
     </header>
+
+    {#if !isBacklog && (listVoiceNotes.length > 0 || recordingThis)}
+      <div class="mb-5 space-y-2">
+        {#if recordingThis}
+          <div class="flex items-center gap-2 rounded-lg border border-red-300/60 bg-red-50 px-3 py-2 text-xs font-medium text-red-600 dark:border-red-800/50 dark:bg-red-950/30 dark:text-red-300">
+            <span class="h-2.5 w-2.5 shrink-0 animate-pulse rounded-full bg-red-500"></span>
+            <span class="shrink-0 tabular-nums font-semibold">{fmtDuration(recElapsed)}</span>
+            <span class="min-w-0 truncate opacity-90">
+              Recording{app.recordingMicLabel ? ` · ${app.recordingMicLabel}` : " · default mic"}
+            </span>
+            <span class="ml-auto shrink-0 text-[11px] opacity-70">press Stop to save</span>
+          </div>
+        {/if}
+        {#each listVoiceNotes as v (v.id)}
+          <div class="flex items-center gap-3 rounded-lg border border-neutral-200/70 bg-white/60 px-3 py-2 dark:border-neutral-700/60 dark:bg-neutral-900/40">
+            <svg viewBox="0 0 20 20" fill="currentColor" class="h-4 w-4 shrink-0 text-neutral-400"><path d="M10 2a3 3 0 00-3 3v5a3 3 0 006 0V5a3 3 0 00-3-3z"/><path d="M5.5 9.5a.75.75 0 011.5 0 3 3 0 006 0 .75.75 0 011.5 0 4.5 4.5 0 01-3.75 4.44V16h2a.75.75 0 010 1.5h-5.5a.75.75 0 010-1.5h2v-2.06A4.5 4.5 0 015.5 9.5z"/></svg>
+            <audio controls preload="none" src={voiceNoteSrc(v.path)} class="h-8 min-w-0 flex-1"></audio>
+            {#if v.durationMs > 0}
+              <span class="shrink-0 text-[11px] tabular-nums text-neutral-400">{fmtDuration(v.durationMs)}</span>
+            {/if}
+            <button
+              type="button"
+              class="shrink-0 rounded p-1 text-neutral-400 transition-colors hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-950/40 dark:hover:text-red-400"
+              title="Delete voice note"
+              aria-label="Delete voice note"
+              onclick={() => app.deleteVoiceNote(v.id)}
+            >
+              <svg viewBox="0 0 20 20" fill="currentColor" class="h-3.5 w-3.5"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zm-1 6a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 112 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd"/></svg>
+            </button>
+          </div>
+        {/each}
+      </div>
+    {/if}
 
     {#if total > 0}
       <div

@@ -1,6 +1,7 @@
 import { confirm, save } from "@tauri-apps/plugin-dialog";
 import { theme } from "$lib/stores/theme.svelte";
 import { captureCheckinGif, checkinStamp } from "$lib/checkin";
+import { startVoiceRecording, type VoiceRecorder } from "$lib/voicenote";
 import {
   listToday,
   listAll,
@@ -45,6 +46,10 @@ import {
   listCheckins,
   deleteCheckin as deleteCheckinIpc,
   type Checkin,
+  addVoiceNote as addVoiceNoteIpc,
+  listVoiceNotes,
+  deleteVoiceNote as deleteVoiceNoteIpc,
+  type VoiceNote,
   listStoryboards,
   createStoryboard as createStoryboardIpc,
   getStoryboard,
@@ -400,6 +405,7 @@ class AppStore {
       this.activityStats = await getActivityStats();
       this.backlogPending = await listBacklogPending();
       this.checkins = await listCheckins();
+      this.voiceNotes = await listVoiceNotes();
       this.allTags = await listTags();
       this.notes = await listNotes();
       this.allTodos = await listAllTodos();
@@ -1884,6 +1890,73 @@ class AppStore {
     try {
       await deleteCheckinIpc(id);
       this.checkins = this.checkins.filter((c) => c.id !== id);
+    } catch (e) {
+      this.setFlash(String(e));
+    }
+  }
+
+  // ---- Voice notes (Sprint 66) ----
+  // On-demand audio recorded per list (start → stop), mirroring the check-ins.
+  // Recording a note is explicit consent (no opt-in toggle). Multiple notes per
+  // list are allowed — each recording appends.
+
+  voiceNotes = $state<VoiceNote[]>([]);
+  // The list currently being recorded (null = not recording). Drives the UI.
+  recordingListId = $state<number | null>(null);
+  // Active mic's device label + the epoch ms recording began (for the elapsed
+  // timer). Both are only meaningful while recordingListId != null.
+  recordingMicLabel = $state("");
+  recordingStartedAt = $state(0);
+  // The active recorder handle — plain (non-reactive) field.
+  private voiceRecorder: VoiceRecorder | null = null;
+
+  async startVoiceNote(listId: number) {
+    if (this.recordingListId !== null) return; // one recording at a time
+    try {
+      this.voiceRecorder = await startVoiceRecording();
+      this.recordingMicLabel = this.voiceRecorder.label;
+      this.recordingStartedAt = Date.now();
+      this.recordingListId = listId;
+    } catch {
+      this.voiceRecorder = null;
+      this.recordingListId = null;
+      this.setFlash("Couldn't start recording — microphone unavailable");
+    }
+  }
+
+  async stopVoiceNote() {
+    const rec = this.voiceRecorder;
+    const listId = this.recordingListId;
+    if (!rec || listId === null) return;
+    this.voiceRecorder = null;
+    this.recordingListId = null;
+    this.recordingMicLabel = "";
+    try {
+      const { bytes, ext, durationMs } = await rec.stop();
+      if (bytes.length === 0) {
+        this.setFlash("Recording was empty");
+        return;
+      }
+      const path = await saveImageBytes(Array.from(bytes), ext);
+      const created = await addVoiceNoteIpc(path, listId, durationMs);
+      this.voiceNotes = [created, ...this.voiceNotes];
+      this.setFlash("🎙️ Voice note saved");
+    } catch {
+      this.setFlash("Couldn't save voice note");
+    }
+  }
+
+  cancelVoiceNote() {
+    this.voiceRecorder?.cancel();
+    this.voiceRecorder = null;
+    this.recordingListId = null;
+    this.recordingMicLabel = "";
+  }
+
+  async deleteVoiceNote(id: number) {
+    try {
+      await deleteVoiceNoteIpc(id);
+      this.voiceNotes = this.voiceNotes.filter((v) => v.id !== id);
     } catch (e) {
       this.setFlash(String(e));
     }

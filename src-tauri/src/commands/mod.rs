@@ -8,6 +8,7 @@ pub mod lists;
 pub mod notes;
 pub mod pins;
 pub mod search;
+pub mod voice_notes;
 pub mod secrets;
 pub mod storyboards;
 pub mod tags;

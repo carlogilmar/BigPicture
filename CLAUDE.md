@@ -411,7 +411,28 @@ numbered, applied at startup. To add one:
 4. Run `pnpm tauri dev` once to confirm migrations apply cleanly on
    your machine.
 
-Last updated: end of Sprint 65 (Check-in polish · animated canvas tints · theme accent · shortcut
+Last updated: end of Sprint 66 (Voice notes per todo list — an on-demand audio note recorded per
+list, the audio sibling of the Sprint 42 camera check-ins (near-1:1 reuse; simpler because
+`MediaRecorder` returns a finished blob — no encoding lib). CAPTURE `src/lib/voicenote.ts`
+`startVoiceRecording()` → `getUserMedia({audio})` + `MediaRecorder`, feature-detects the container
+(WKWebView `audio/mp4`→m4a · Chromium webm/opus via `isTypeSupported`); returns
+`{label, stop(), cancel()}` where `stop()` resolves `{bytes, ext, durationMs}` and `label` is the
+active mic's device name (empty until permission granted). BACKEND migration `0029_voice_notes.sql`
+(`voice_notes(id, list_id→lists ON DELETE SET NULL, path, duration_ms, created_at)`),
+`commands/voice_notes.rs` (add/list/delete; delete removes the file; 2 tests), `VoiceNote` model,
+registered in lib.rs; bytes saved through the existing `save_image` command (files land in the images
+dir). STORE `voiceNotes` (loaded in init) + `recordingListId`/`recordingMicLabel`/`recordingStartedAt`
++ `startVoiceNote`/`stopVoiceNote`/`cancelVoiceNote`/`deleteVoiceNote`; one recording at a time, NO
+opt-in toggle (recording is explicit consent, unlike the camera's ambient capture), MULTIPLE notes per
+list (append). UI `ListView`: a mic button (→ red "Stop m:ss" while recording this list), a recording
+banner (pulse + live `m:ss` timer via a 250ms `$effect` interval from `recordingStartedAt` + the
+selected mic label, "default mic" fallback), and a per-list player list (`<audio controls>` + duration
++ delete, newest first; hidden for Backlog). `NSMicrophoneUsageDescription` added to Info.plist. ipc
+`addVoiceNote`/`listVoiceNotes`/`deleteVoiceNote` + `voiceNoteSrc` (convertFileSrc). Deferred:
+waveform, max-duration cap, an ActivityView gallery tab, transcription. svelte-check + cargo check + 2
+tests + build pass; the real WKWebView `MediaRecorder` capture / container / `<audio>` playback / mic
+prompt need a live `pnpm tauri dev` run (same caveat as the camera check-ins). See
+documentation/SPRINT66.md. — earlier: Sprint 65 (Check-in polish · animated canvas tints · theme accent · shortcut
 cleanup — a UX/theming grab-bag. (1) CAMERA CHECK-INS: `captureCheckinGif` now shows a small
 non-invasive live PREVIEW (bottom-right, mirrored) with a 3→2→1 COUNTDOWN so you can frame yourself,
 and burns a DATE STAMP into each frame (`checkinStamp(new Date())` → "Thursday · Aug 14, 2026", drawn

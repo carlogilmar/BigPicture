@@ -6,5 +6,9 @@
        for the (opt-in) check-in GIF feature. -->
   <key>NSCameraUsageDescription</key>
   <string>Alexandria uses your camera only for the optional "check-in" GIFs you enable in Settings. Photos stay on your Mac and are never uploaded.</string>
+  <!-- Sprint 66: shown by macOS when the webview first requests the microphone
+       for the (on-demand) voice notes recorded per todo list. -->
+  <key>NSMicrophoneUsageDescription</key>
+  <string>Alexandria uses your microphone only when you record a voice note for a list. Recordings stay on your Mac and are never uploaded.</string>
 </dict>
 </plist>

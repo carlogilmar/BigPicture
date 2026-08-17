@@ -626,6 +626,26 @@ export const listCheckins = () => invoke<Checkin[]>("list_checkins");
 export const deleteCheckin = (id: number) =>
   invoke<void>("delete_checkin", { id });
 
+// Voice notes (Sprint 66) — audio recorded per list. Bytes are saved via
+// saveImageBytes (it just writes bytes); voiceNoteSrc turns the path into an
+// asset URL for an <audio> element.
+export type VoiceNote = {
+  id: number;
+  listId: number | null;
+  path: string;
+  durationMs: number;
+  createdAt: string;
+};
+export const voiceNoteSrc = (path: string) => convertFileSrc(path);
+export const addVoiceNote = (
+  path: string,
+  listId: number | null,
+  durationMs: number,
+) => invoke<VoiceNote>("add_voice_note", { path, listId, durationMs });
+export const listVoiceNotes = () => invoke<VoiceNote[]>("list_voice_notes");
+export const deleteVoiceNote = (id: number) =>
+  invoke<void>("delete_voice_note", { id });
+
 // Storyboards (Sprint 43)
 export type StoryboardNodeKind = "box" | "icon" | "header" | "comment";
 export type Storyboard = {
