@@ -172,6 +172,26 @@ export function createMarkdownIt(): MarkdownIt {
     return `<div class="md-code">${CODE_COPY_BTN}${rendered}</div>`;
   };
 
+  // Stamp the source line range (data-line / data-end-line) on every fenced
+  // block's outer element — the per-block editor uses it to slice/splice just
+  // that block. Wrapped AFTER the big dispatch above so that stays untouched;
+  // the regular block tokens get the same attrs via addLineNumbers.
+  const fenceRule = md.renderer.rules.fence!;
+  md.renderer.rules.fence = (tokens, idx, opts, env, self) =>
+    withSourceRange(fenceRule(tokens, idx, opts, env, self), tokens[idx].map);
+
+  // Inline `code` → a copyable "badge": the token text + an always-visible copy
+  // button carrying the raw text in data-code (browsers decode entities on read,
+  // so the copied text is exact). A delegated listener does the copy.
+  md.renderer.rules.code_inline = (tokens, idx) => {
+    const esc = md.utils.escapeHtml(tokens[idx].content);
+    return (
+      `<code class="md-badge" data-code="${esc}">${esc}` +
+      `<button class="md-badge-copy" type="button" tabindex="-1" aria-label="Copy" title="Copy">${INLINE_COPY_ICON}</button>` +
+      `</code>`
+    );
+  };
+
   // `Some text` followed by a line of dashes shouldn't silently become a big
   // heading (a confusing "stray line"). Keep `---` as a thematic-break divider
   // only — disable setext (underline) headings.
@@ -222,6 +242,7 @@ export function createMarkdownIt(): MarkdownIt {
 
   // One delegated listener powers the copy buttons across every surface.
   installCodeCopy();
+  installInlineCopy();
   installBlockImageCopy();
   installGifSave();
   installSectionToggle();
@@ -365,13 +386,66 @@ function addLineNumbers(md: MarkdownIt): void {
       // level 0 = top-level; nesting >= 0 = open or self-closing (skip closes).
       if (token.level === 0 && token.nesting >= 0 && token.map) {
         token.attrSet("data-line", String(token.map[0]));
+        // End line is exclusive (markdown-it convention) — the per-block editor
+        // slices lines[start, end).
+        token.attrSet("data-end-line", String(token.map[1]));
       }
     }
   });
 }
 
+// Inject data-line / data-end-line into the outermost element of a fenced
+// block's HTML (custom fences build HTML by hand and ignore token attrs). Used
+// to make powered blocks per-block editable like the regular blocks.
+function withSourceRange(html: string, map: [number, number] | null): string {
+  if (!map || !html) return html;
+  return html.replace(
+    /^(\s*<[a-zA-Z][\w-]*)/,
+    `$1 data-line="${map[0]}" data-end-line="${map[1]}"`,
+  );
+}
+
+// Replace source lines [start, end) with `text` (the per-block editor's save).
+// Sibling of toggleTaskInSource — a targeted rewrite of one block's raw markdown.
+export function replaceLinesInSource(
+  src: string,
+  start: number,
+  end: number,
+  text: string,
+): string {
+  const lines = src.split("\n");
+  const before = lines.slice(0, Math.max(0, start));
+  const after = lines.slice(Math.max(start, end));
+  return [...before, ...text.split("\n"), ...after].join("\n");
+}
+
 // The copy button injected into each non-mermaid fenced block. Two icons —
 // clipboard + check — CSS-toggled by the `.md-copied` class after a copy.
+// Clipboard + check icons for the inline-code "badge" copy button. CSS toggles
+// them via `.md-copied` (see app.css .md-badge-copy).
+const INLINE_COPY_ICON =
+  '<svg class="md-badge-clip" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">' +
+  '<path d="M7 3a2 2 0 00-2 2v8a2 2 0 002 2h6a2 2 0 002-2V7.4A2 2 0 0014.4 6L12 3.6A2 2 0 0010.6 3H7z"/>' +
+  '<path d="M3 7a2 2 0 012-2v10h8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/></svg>' +
+  '<svg class="md-badge-check" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">' +
+  '<path fill-rule="evenodd" d="M16.7 5.3a1 1 0 010 1.42l-7.5 7.5a1 1 0 01-1.42 0l-3.5-3.5a1 1 0 011.42-1.42l2.79 2.8 6.79-6.8a1 1 0 011.42 0z" clip-rule="evenodd"/></svg>';
+
+// Per-type callout icons (currentColor → tinted with the type color). Warning +
+// caution share the triangle; note = info, tip = bulb, important = star,
+// comment = speech bubble.
+const CALLOUT_ICON: Record<string, string> = {
+  note: '<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M10 2a8 8 0 100 16 8 8 0 000-16zm1 4a1 1 0 11-2 0 1 1 0 012 0zM9 9h2v5H9V9z"/></svg>',
+  tip: '<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M10 2a5 5 0 00-3 9v2a1 1 0 001 1h4a1 1 0 001-1v-2a5 5 0 00-3-9zM8 16a1 1 0 001 1h2a1 1 0 001-1v-1H8v1z"/></svg>',
+  important:
+    '<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M10 1.6l2.5 5 5.5.8-4 3.9.95 5.5L10 14.7 5.05 16.8 6 11.3l-4-3.9 5.5-.8L10 1.6z"/></svg>',
+  warning:
+    '<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M8.6 2.9a1.6 1.6 0 012.8 0l6.3 11.4A1.6 1.6 0 0116.3 17H3.7a1.6 1.6 0 01-1.4-2.7L8.6 2.9zM9 7v4h2V7H9zm0 6v2h2v-2H9z"/></svg>',
+  caution:
+    '<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M8.6 2.9a1.6 1.6 0 012.8 0l6.3 11.4A1.6 1.6 0 0116.3 17H3.7a1.6 1.6 0 01-1.4-2.7L8.6 2.9zM9 7v4h2V7H9zm0 6v2h2v-2H9z"/></svg>',
+  comment:
+    '<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M4 3h12a2 2 0 012 2v8a2 2 0 01-2 2H8l-4 3v-3a2 2 0 01-2-2V5a2 2 0 012-2z"/></svg>',
+};
+
 const CODE_COPY_BTN =
   '<button class="md-copy-btn" type="button" title="Copy code" aria-label="Copy code">' +
   '<svg class="md-copy-i" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">' +
@@ -2076,6 +2150,37 @@ function renderTreemap(
 // every markdown surface does. Capture phase + stopPropagation so the click
 // doesn't also trip a surface's click-to-edit.
 let codeCopyInstalled = false;
+// Delegated copy for the inline-code badges (mirrors installCodeCopy). Reads the
+// exact text from the badge's data-code and flips the button to a check briefly.
+let inlineCopyInstalled = false;
+function installInlineCopy(): void {
+  if (inlineCopyInstalled || typeof document === "undefined") return;
+  inlineCopyInstalled = true;
+  document.addEventListener(
+    "click",
+    (e) => {
+      const btn = (e.target as Element | null)?.closest?.(
+        ".md-badge-copy",
+      ) as HTMLButtonElement | null;
+      if (!btn) return;
+      e.stopPropagation();
+      e.preventDefault();
+      const text = btn.closest(".md-badge")?.getAttribute("data-code") ?? "";
+      if (!text) return;
+      void navigator.clipboard.writeText(text).then(
+        () => {
+          btn.classList.add("md-copied");
+          window.setTimeout(() => btn.classList.remove("md-copied"), 1200);
+        },
+        () => {
+          /* clipboard denied — no-op */
+        },
+      );
+    },
+    true,
+  );
+}
+
 function installCodeCopy(): void {
   if (codeCopyInstalled || typeof document === "undefined") return;
   codeCopyInstalled = true;
@@ -2651,7 +2756,8 @@ function addCallouts(md: MarkdownIt): void {
     const open = defBq(tokens, idx, opts, env, self);
     const cls = (tokens[idx].meta as { callout?: string } | undefined)?.callout;
     if (!cls) return open;
-    return `${open}<div class="callout-label">${CALLOUT_LABEL[cls] ?? cls}</div>`;
+    const ico = CALLOUT_ICON[cls] ?? "";
+    return `${open}<div class="callout-label"><span class="callout-ico">${ico}</span>${CALLOUT_LABEL[cls] ?? cls}</div>`;
   };
 }
 

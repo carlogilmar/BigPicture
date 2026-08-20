@@ -411,7 +411,34 @@ numbered, applied at startup. To add one:
 4. Run `pnpm tauri dev` once to confirm migrations apply cleanly on
    your machine.
 
-Last updated: end of Sprint 66 (Voice notes per todo list — an on-demand audio note recorded per
+Last updated: end of Sprint 67 (Per-block editing · section jumper · note-styling refresh — three
+threads for big notes, all frontend (no DB/IPC/migration). (1) PER-BLOCK EDITING: hover a block in a
+note preview → a pencil (right margin) → an in-place textarea over just that block, seeded with its
+raw markdown, Save (⌘↩) splices it back & commits (Esc cancels). Enabled by SOURCE RANGES on every
+block: `addLineNumbers` stamps `data-line`+`data-end-line` (start + exclusive end from `token.map`) on
+regular blocks, and a `withSourceRange()` wrapper on the fence rule injects the same into every
+powered/code block's outer element. New `replaceLinesInSource(src,start,end,text)` splice helper
+(sibling of toggleTaskInSource). MarkdownEditor: `previewWrap` (relative) hosts the pencil+overlay;
+`onPreviewMove` finds the block via `closest("[data-line][data-end-line]")`; notes only (`!readOnly`),
+preview only. Pencil is in the RIGHT margin (`right:-1.75rem`) to avoid colliding with a block's own
+top-right controls (📷/GIF) + progress steppers, with HOVER-INTENT (240ms hide delay cancelled by the
+pencil's mouseenter) so it doesn't vanish mid-reach. (2) SECTION JUMPER: replaced the always-on
+floating heading column (it overlapped the note) with an on-demand "≡ Sections" button above the Edit
+FAB (bottom-right) → a popover of h1–h3 (indented), click to smooth-scroll; shown for ≥2 headings,
+hidden while split/block-editing. (3) NOTE STYLING (all theme-accent-driven): headings → SERIF display
+face (`ui-serif`→system New York/Iowan, h1 hairline rule; scoped); inline `code` → a copyable BADGE
+(`code_inline`→`<code class="md-badge" data-code=…>`+ always-visible copy button; `installInlineCopy`
+delegated copies the exact text); plain `>` (no `[!TYPE]`) → a SOFT NOTE card (`blockquote:not(.callout)`,
+accent bar+tint+quote glyph); CALLOUTS redesigned to rounded tinted panels w/ a left bar + per-type ICON
+(`CALLOUT_ICON` map → note info · tip bulb · important star · warning/caution triangle · comment bubble);
+SUBLISTS step ●→○→▪ and 1.→a.→i. (bullet under a number stays a bullet) with accent `::marker`; TASK
+checkboxes use `accent-color:var(--accent)`. Specificity fixes: scoped `ul/ol{list-style}` was beating
+app.css nested rules (→ all lists showed the top marker) so list-style moved wholesale to app.css; a
+generic `.md-badge-copy svg{display:block}` beat the check-hide rule (→ both icons showed) so it was
+removed. Files: `markdownit.ts`, `MarkdownEditor.svelte`, `app.css`. Mocked up in three Artifact rounds
+first. svelte-check + build pass; DOM/interaction bits need a live webview run. Deferred: per-list-item
+editing, surgical single-block re-render, and the un-taken style ideas (link chips, divider, rhythm).
+See documentation/SPRINT67.md. — earlier: Sprint 66 (Voice notes per todo list — an on-demand audio note recorded per
 list, the audio sibling of the Sprint 42 camera check-ins (near-1:1 reuse; simpler because
 `MediaRecorder` returns a finished blob — no encoding lib). CAPTURE `src/lib/voicenote.ts`
 `startVoiceRecording()` → `getUserMedia({audio})` + `MediaRecorder`, feature-detects the container

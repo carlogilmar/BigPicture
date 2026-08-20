@@ -12,6 +12,7 @@
     toggleTaskInSource,
     stepProgressInSource,
     toggleSectionInSource,
+    replaceLinesInSource,
   } from "$lib/markdownit";
   import EntityLinkPicker from "$lib/components/EntityLinkPicker.svelte";
   import SlashMenu from "$lib/components/SlashMenu.svelte";
@@ -241,6 +242,104 @@
       textarea?.setSelectionRange(caret + token.length, caret + token.length);
     });
   }
+
+  // ---- Per-block editing (Sprint 67) ----
+  // Each rendered block that carries a source range (data-line + data-end-line,
+  // stamped by markdownit) gets a hover pencil; clicking it opens a small
+  // in-place textarea seeded with just that block's raw markdown, spliced back
+  // into the whole note on save. Preview mode + editable surfaces only.
+  let previewWrap: HTMLDivElement | undefined = $state();
+  let hoveredBlockEl: HTMLElement | null = null; // non-reactive DOM ref
+  let blockPencilTop = $state<number | null>(null);
+  let blockEdit = $state<
+    { start: number; end: number; top: number; left: number; width: number } | null
+  >(null);
+  let blockDraft = $state("");
+  let blockTextarea: HTMLTextAreaElement | undefined = $state();
+
+  // Hover-intent: the pencil sits in the right margin, so moving the cursor from
+  // the block out to it briefly leaves the preview — hide on a short delay (and
+  // cancel it when the cursor lands on the pencil) so it doesn't vanish mid-reach.
+  let pencilHideTimer: ReturnType<typeof setTimeout> | null = null;
+  function cancelPencilHide() {
+    if (pencilHideTimer) {
+      clearTimeout(pencilHideTimer);
+      pencilHideTimer = null;
+    }
+  }
+  function schedulePencilHide() {
+    cancelPencilHide();
+    pencilHideTimer = setTimeout(() => {
+      hoveredBlockEl = null;
+      blockPencilTop = null;
+    }, 240);
+  }
+  function onPreviewMove(e: MouseEvent) {
+    if (readOnly || blockEdit || editing) return;
+    const el = (e.target as HTMLElement).closest<HTMLElement>(
+      "[data-line][data-end-line]",
+    );
+    if (el && previewEl?.contains(el)) {
+      cancelPencilHide();
+      hoveredBlockEl = el;
+      blockPencilTop = el.offsetTop;
+    } else {
+      schedulePencilHide();
+    }
+  }
+  function onPreviewLeave() {
+    if (!blockEdit) schedulePencilHide();
+  }
+  function editHoveredBlock() {
+    const el = hoveredBlockEl;
+    if (!el) return;
+    const start = Number(el.dataset.line);
+    const end = Number(el.dataset.endLine);
+    if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return;
+    blockDraft = draft.split("\n").slice(start, end).join("\n");
+    blockEdit = {
+      start,
+      end,
+      top: el.offsetTop,
+      left: el.offsetLeft,
+      width: el.offsetWidth,
+    };
+    blockPencilTop = null;
+    queueMicrotask(() => blockTextarea?.focus());
+  }
+  async function saveBlock() {
+    const be = blockEdit;
+    if (!be) return;
+    blockEdit = null;
+    const next = replaceLinesInSource(draft, be.start, be.end, blockDraft);
+    draft = next;
+    await onCommit(next);
+  }
+  function cancelBlock() {
+    blockEdit = null;
+    blockPencilTop = null;
+  }
+  function onBlockKey(e: KeyboardEvent) {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      cancelBlock();
+    } else if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+      e.preventDefault();
+      void saveBlock();
+    } else if (e.key === "Tab") {
+      e.preventDefault();
+      const ta = blockTextarea;
+      if (!ta) return;
+      const s = ta.selectionStart;
+      const en = ta.selectionEnd;
+      blockDraft = blockDraft.slice(0, s) + "  " + blockDraft.slice(en);
+      queueMicrotask(() => ta.setSelectionRange(s + 2, s + 2));
+    }
+  }
+
+  // Outline popover (Sprint 67) — an on-demand section jumper (replaces the
+  // always-on floating column that overlapped the note).
+  let outlineOpen = $state(false);
 
   function onPreviewClick(e: MouseEvent) {
     const target = e.target as HTMLElement;
@@ -658,42 +757,95 @@
         </svg>
       </button>
     {/if}
-    <div
-      bind:this={previewEl}
-      role="presentation"
-      data-md-sections={readOnly ? undefined : "persist"}
-      style="min-height: {minHeight};"
-      class="markdown-body w-full overflow-x-hidden rounded-md px-3 py-2 text-sm leading-relaxed text-neutral-800 dark:text-neutral-200"
-      onclick={onPreviewClick}
-      onkeydown={() => {}}
-    >
-      {@html rendered}
-    </div>
-    {#if outline && headings.length >= 2 && !app.splitOpen}
-      <!-- Floating heading outline for long documents (wide windows only). -->
-      <nav
-        class="fixed right-5 top-24 z-10 hidden w-52 xl:block"
-        aria-label="Document outline"
+    <div class="relative" role="presentation" bind:this={previewWrap} onmouseleave={onPreviewLeave}>
+      <div
+        bind:this={previewEl}
+        role="presentation"
+        data-md-sections={readOnly ? undefined : "persist"}
+        style="min-height: {minHeight};"
+        class="markdown-body w-full overflow-x-hidden rounded-md px-3 py-2 text-sm leading-relaxed text-neutral-800 dark:text-neutral-200"
+        onclick={onPreviewClick}
+        onmousemove={onPreviewMove}
+        onkeydown={() => {}}
       >
-        <p class="mb-1 px-2 text-[10px] font-medium uppercase tracking-widest text-neutral-400 dark:text-neutral-500">
-          On this page
-        </p>
-        <ul class="max-h-[70vh] overflow-y-auto border-l border-neutral-200/80 dark:border-neutral-700/80">
-          {#each headings as h, i (i)}
-            <li>
-              <button
-                type="button"
-                class="block w-full truncate py-1 pr-2 text-left text-xs text-neutral-500 transition-colors hover:text-blue-600 dark:text-neutral-400 dark:hover:text-blue-400"
-                style="padding-left: {8 + (h.level - 1) * 12}px"
-                title={h.text}
-                onclick={() => scrollToHeading(i)}
-              >
-                {h.text}
-              </button>
-            </li>
-          {/each}
-        </ul>
-      </nav>
+        {@html rendered}
+      </div>
+      {#if blockPencilTop !== null && !blockEdit && !readOnly}
+        <button
+          type="button"
+          onmousedown={(e) => e.preventDefault()}
+          onclick={editHoveredBlock}
+          onmouseenter={cancelPencilHide}
+          onmouseleave={schedulePencilHide}
+          style="top: {blockPencilTop}px; right: -1.75rem;"
+          class="absolute z-10 inline-flex h-7 w-7 items-center justify-center rounded-md border border-neutral-200/70 bg-white/90 text-neutral-500 shadow-sm backdrop-blur transition-colors hover:border-[color:var(--accent)] hover:text-[color:var(--accent)] dark:border-neutral-700/70 dark:bg-neutral-900/85 dark:text-neutral-300"
+          title="Edit this block"
+          aria-label="Edit this block"
+        >
+          <svg viewBox="0 0 20 20" fill="currentColor" class="h-3.5 w-3.5">
+            <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+          </svg>
+        </button>
+      {/if}
+      {#if blockEdit}
+        <div class="absolute z-20" style="top: {blockEdit.top}px; left: {blockEdit.left}px; width: {blockEdit.width}px;">
+          <textarea
+            bind:this={blockTextarea}
+            bind:value={blockDraft}
+            use:autosize={blockDraft}
+            onblur={saveBlock}
+            onkeydown={onBlockKey}
+            style="min-height: 3rem; border-color: var(--accent);"
+            class="w-full resize-none overflow-hidden rounded-md border-2 bg-white px-3 py-2 font-mono text-[13px] leading-relaxed shadow-xl outline-none dark:bg-neutral-900 dark:text-neutral-100"
+          ></textarea>
+          <div class="mt-1 flex items-center gap-1.5">
+            <button type="button" class="btn-accent rounded px-2 py-1 text-xs font-medium" onclick={saveBlock}>Save block</button>
+            <button type="button" class="rounded border border-neutral-200 px-2 py-1 text-xs text-neutral-600 dark:border-neutral-700 dark:text-neutral-300" onmousedown={(e) => e.preventDefault()} onclick={cancelBlock}>Cancel</button>
+            <span class="ml-auto text-[10px] text-neutral-400">⌘↩ save · Esc cancel</span>
+          </div>
+        </div>
+      {/if}
+    </div>
+    {#if outline && headings.length >= 2 && !app.splitOpen && !blockEdit}
+      <!-- On-demand section jumper, stacked just above the Edit FAB (bottom-
+           right), replacing the old always-on column that overlapped the note. -->
+      <div class="fixed bottom-20 right-6 z-20 flex flex-col items-end">
+        {#if outlineOpen}
+          <div class="mb-2 max-h-[60vh] w-60 overflow-y-auto rounded-xl border border-neutral-200/70 bg-white/95 p-2 shadow-xl backdrop-blur dark:border-neutral-700/70 dark:bg-neutral-900/90">
+            <p class="mb-1 px-2 text-[10px] font-medium uppercase tracking-widest text-neutral-400 dark:text-neutral-500">
+              On this page
+            </p>
+            <ul>
+              {#each headings as h, i (i)}
+                <li>
+                  <button
+                    type="button"
+                    class="block w-full truncate rounded py-1 pr-2 text-left text-xs text-neutral-600 transition-colors hover:bg-neutral-100 hover:text-[color:var(--accent)] dark:text-neutral-300 dark:hover:bg-neutral-800"
+                    style="padding-left: {8 + (h.level - 1) * 12}px"
+                    title={h.text}
+                    onclick={() => {
+                      scrollToHeading(i);
+                      outlineOpen = false;
+                    }}
+                  >
+                    {h.text}
+                  </button>
+                </li>
+              {/each}
+            </ul>
+          </div>
+        {/if}
+        <button
+          type="button"
+          onclick={() => (outlineOpen = !outlineOpen)}
+          title="Jump to a section"
+          aria-label="Document outline"
+          class="inline-flex items-center gap-1.5 rounded-full border border-neutral-200/70 bg-white/90 px-3 py-2 text-xs font-medium text-neutral-700 shadow-lg backdrop-blur transition-colors hover:bg-neutral-100 dark:border-neutral-700/70 dark:bg-neutral-900/85 dark:text-neutral-200 dark:hover:bg-neutral-800"
+        >
+          <svg viewBox="0 0 20 20" fill="currentColor" class="h-4 w-4"><path d="M3 5.75A.75.75 0 013.75 5h12.5a.75.75 0 010 1.5H3.75A.75.75 0 013 5.75zM3 10a.75.75 0 01.75-.75h12.5a.75.75 0 010 1.5H3.75A.75.75 0 013 10zm0 4.25a.75.75 0 01.75-.75h12.5a.75.75 0 010 1.5H3.75a.75.75 0 01-.75-.75z" /></svg>
+          Sections
+        </button>
+      </div>
     {/if}
     {#if isLarge && !floatingEdit && !readOnly}
       <div class="mt-2 flex justify-center">
@@ -751,47 +903,77 @@
     overflow-wrap: anywhere;
     word-break: break-word;
   }
+  /* Headings use a serif display face (system "New York" / Iowan) so they read
+     as titles, not just bigger body text. H1 gets a hairline rule. */
+  .markdown-body :global(h1),
+  .markdown-body :global(h2),
+  .markdown-body :global(h3) {
+    font-family: ui-serif, "Iowan Old Style", "Palatino Linotype", Palatino,
+      Georgia, serif;
+  }
   .markdown-body :global(h1) {
-    font-size: 1.95rem;
-    font-weight: 700;
-    line-height: 1.2;
-    margin: 1rem 0 0.6rem;
+    font-size: 2rem;
+    font-weight: 650;
+    line-height: 1.15;
+    margin: 1rem 0 0.55rem;
+    padding-bottom: 0.3rem;
+    border-bottom: 2px solid rgba(0, 0, 0, 0.08);
+  }
+  :global(html.dark) .markdown-body :global(h1) {
+    border-bottom-color: rgba(255, 255, 255, 0.1);
   }
   .markdown-body :global(h2) {
-    font-size: 1.25rem;
+    font-size: 1.5rem;
     font-weight: 600;
-    margin: 0.6rem 0 0.4rem;
+    line-height: 1.2;
+    margin: 0.75rem 0 0.35rem;
   }
   .markdown-body :global(h3) {
-    font-size: 1.1rem;
+    font-size: 1.18rem;
     font-weight: 600;
-    margin: 0.5rem 0 0.3rem;
+    margin: 0.55rem 0 0.25rem;
   }
   .markdown-body :global(p) {
     margin: 0.35rem 0;
   }
-  .markdown-body :global(ul) {
-    list-style: disc;
-    padding-left: 1.4rem;
-    margin: 0.35rem 0;
-  }
+  /* list-style lives in app.css (base + nested stepping) so the nested rules
+     aren't out-specificity'd by this scoped rule; here we only set spacing. */
+  .markdown-body :global(ul),
   .markdown-body :global(ol) {
-    list-style: decimal;
     padding-left: 1.4rem;
     margin: 0.35rem 0;
   }
   .markdown-body :global(li) {
     margin: 0.15rem 0;
   }
-  .markdown-body :global(blockquote) {
-    border-left: 3px solid rgba(0, 0, 0, 0.15);
-    padding-left: 0.75rem;
-    margin: 0.5rem 0;
-    color: rgba(0, 0, 0, 0.6);
+  /* A plain `>` quote (no [!TYPE]) → a soft "note" card: accent bar + tint +
+     quote glyph. Typed callouts (blockquote.callout) are styled in app.css. */
+  .markdown-body :global(blockquote:not(.callout)) {
+    position: relative;
+    margin: 0.55rem 0;
+    padding: 0.6rem 0.85rem 0.6rem 2.2rem;
+    border: 1px solid color-mix(in srgb, var(--accent) 16%, transparent);
+    border-left: 3px solid var(--accent);
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--accent) 7%, transparent);
+    color: inherit;
   }
-  :global(html.dark) .markdown-body :global(blockquote) {
-    border-left-color: rgba(255, 255, 255, 0.18);
-    color: rgba(255, 255, 255, 0.6);
+  .markdown-body :global(blockquote:not(.callout))::before {
+    content: "\201C";
+    position: absolute;
+    left: 0.55rem;
+    top: 0.05rem;
+    font-family: Georgia, serif;
+    font-size: 1.6rem;
+    line-height: 1;
+    color: var(--accent);
+    opacity: 0.6;
+  }
+  .markdown-body :global(blockquote:not(.callout) > :first-child) {
+    margin-top: 0;
+  }
+  .markdown-body :global(blockquote:not(.callout) > :last-child) {
+    margin-bottom: 0;
   }
   /* Links render as small button-like chips — easier to spot and click than
      underlined text (Sprint 23 follow-up). */

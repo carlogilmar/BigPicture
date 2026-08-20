@@ -135,56 +135,80 @@ html.dark .markdown-body .md-c-violet { color: hsl(265 80% 76%); }
 html.dark .markdown-body .md-c-pink { color: hsl(330 85% 72%); }
 html.dark .markdown-body .md-c-gray { color: hsl(220 10% 65%); }
 
-/* > [!NOTE] callouts */
+/* > [!NOTE] callouts — soft, rounded, tinted panels with an accent bar + a
+   per-type icon (one family with the plain `>` soft-note). */
 .markdown-body blockquote.callout {
-  border-left: 4px solid;
-  border-radius: 6px;
-  padding: 0.5rem 0.85rem;
+  border: 1px solid;
+  border-left-width: 3px;
+  border-radius: 10px;
+  padding: 0.6rem 0.85rem;
   margin: 0.6rem 0;
 }
 .markdown-body blockquote.callout .callout-label {
-  font-size: 0.68rem;
-  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+  font-size: 0.7rem;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  margin-bottom: 0.15rem;
-  opacity: 0.95;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.1rem;
+}
+.markdown-body blockquote.callout .callout-ico {
+  display: inline-flex;
+}
+.markdown-body blockquote.callout .callout-ico svg {
+  width: 15px;
+  height: 15px;
+  display: block;
 }
 .markdown-body blockquote.callout > :nth-child(2) { margin-top: 0; }
-.markdown-body blockquote.callout-note,
-.markdown-body blockquote.callout-comment {
-  border-color: hsl(217 80% 55%);
+/* Per type: faint outline (all sides) + a solid left bar + tinted bg + label. */
+.markdown-body blockquote.callout-note {
+  border-color: hsl(217 80% 55% / 0.32);
+  border-left-color: hsl(217 80% 56%);
   background: hsl(217 80% 55% / 0.08);
 }
-.markdown-body blockquote.callout-note .callout-label,
-.markdown-body blockquote.callout-comment .callout-label { color: hsl(217 75% 52%); }
+.markdown-body blockquote.callout-note .callout-label { color: hsl(217 75% 52%); }
 .markdown-body blockquote.callout-comment {
-  border-color: hsl(265 60% 58%);
-  background: hsl(265 60% 58% / 0.08);
+  border-color: hsl(250 12% 50% / 0.34);
+  border-left-color: hsl(250 12% 52%);
+  background: hsl(250 10% 50% / 0.08);
 }
-.markdown-body blockquote.callout-comment .callout-label { color: hsl(265 60% 58%); }
+.markdown-body blockquote.callout-comment .callout-label { color: hsl(250 10% 44%); }
 .markdown-body blockquote.callout-tip {
-  border-color: hsl(145 55% 45%);
+  border-color: hsl(145 55% 45% / 0.34);
+  border-left-color: hsl(145 58% 42%);
   background: hsl(145 55% 45% / 0.09);
 }
 .markdown-body blockquote.callout-tip .callout-label { color: hsl(145 55% 38%); }
+.markdown-body blockquote.callout-important {
+  border-color: hsl(265 62% 60% / 0.34);
+  border-left-color: hsl(265 62% 60%);
+  background: hsl(265 62% 60% / 0.09);
+}
+.markdown-body blockquote.callout-important .callout-label { color: hsl(265 55% 55%); }
 .markdown-body blockquote.callout-warning,
 .markdown-body blockquote.callout-caution {
-  border-color: hsl(35 90% 50%);
+  border-color: hsl(35 90% 50% / 0.36);
+  border-left-color: hsl(35 90% 50%);
   background: hsl(35 90% 50% / 0.1);
 }
 .markdown-body blockquote.callout-warning .callout-label,
 .markdown-body blockquote.callout-caution .callout-label { color: hsl(32 85% 44%); }
-.markdown-body blockquote.callout-important {
-  border-color: hsl(0 72% 55%);
+.markdown-body blockquote.callout-caution {
+  border-color: hsl(0 72% 55% / 0.34);
+  border-left-color: hsl(0 72% 55%);
   background: hsl(0 72% 55% / 0.09);
 }
-.markdown-body blockquote.callout-important .callout-label { color: hsl(0 70% 52%); }
+.markdown-body blockquote.callout-caution .callout-label { color: hsl(0 70% 52%); }
+/* Dark-mode label readability. */
+html.dark .markdown-body blockquote.callout-note .callout-label { color: hsl(217 85% 74%); }
+html.dark .markdown-body blockquote.callout-comment .callout-label { color: hsl(250 20% 74%); }
 html.dark .markdown-body blockquote.callout-tip .callout-label { color: hsl(145 55% 62%); }
+html.dark .markdown-body blockquote.callout-important .callout-label { color: hsl(265 75% 76%); }
 html.dark .markdown-body blockquote.callout-warning .callout-label,
 html.dark .markdown-body blockquote.callout-caution .callout-label { color: hsl(40 90% 62%); }
-html.dark .markdown-body blockquote.callout-important .callout-label { color: hsl(0 85% 70%); }
-html.dark .markdown-body blockquote.callout-comment .callout-label { color: hsl(265 75% 76%); }
 
 /* Distinct table header — subtle accent tint (rounded corners + row hover
    live in the editor components' .markdown-body table rules). */
@@ -196,11 +220,17 @@ html.dark .markdown-body table thead th {
   background: rgba(96, 165, 250, 0.16);
 }
 
-/* Nested list bullets / numbering */
+/* Nested list bullets / numbering: bullets step ● → ○ → ▪, numbers 1. → a. → i.,
+   and a bullet sub-list under a number stays a bullet. Markers use the theme
+   accent so nesting reads at a glance. */
+.markdown-body ul { list-style: disc; }
+.markdown-body ol { list-style: decimal; }
 .markdown-body ul ul { list-style: circle; }
 .markdown-body ul ul ul { list-style: square; }
 .markdown-body ol ol { list-style: lower-alpha; }
 .markdown-body ol ol ol { list-style: lower-roman; }
+.markdown-body ol ul { list-style: disc; }
+.markdown-body li::marker { color: var(--accent); }
 
 /* ------------------------------------------------------------------ */
 /* Task lists (Sprint 23): - [ ] / - [x] render as interactive        */
@@ -222,12 +252,54 @@ html.dark .markdown-body table thead th {
   margin: 0;
   width: 1rem;
   height: 1rem;
-  accent-color: #2563eb;
+  accent-color: var(--accent);
   cursor: pointer;
 }
 .markdown-body li.task-done {
   text-decoration: line-through;
   opacity: 0.55;
+}
+
+/* ------------------------------------------------------------------ */
+/* Inline `code` badges (Sprint 67): an accent-tinted chip + an always-  */
+/* visible copy button (installInlineCopy copies the exact text).        */
+/* ------------------------------------------------------------------ */
+.markdown-body code.md-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2em;
+  vertical-align: baseline;
+  font-family: var(--mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: 0.82em;
+  font-weight: 600;
+  line-height: 1.4;
+  padding: 0.04em 0.3em 0.04em 0.42em;
+  border-radius: 6px;
+  /* Tinted with the theme accent; text leans accent but stays readable. */
+  color: color-mix(in srgb, var(--accent) 55%, currentColor);
+  background: color-mix(in srgb, var(--accent) 13%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 24%, transparent);
+}
+.markdown-body code.md-badge .md-badge-copy {
+  display: inline-flex;
+  align-items: center;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--accent);
+  cursor: pointer;
+  opacity: 0.5;
+  transition: opacity 0.12s ease;
+}
+.markdown-body code.md-badge:hover .md-badge-copy { opacity: 0.85; }
+.markdown-body code.md-badge .md-badge-copy:hover { opacity: 1; }
+.markdown-body code.md-badge .md-badge-copy svg { width: 0.9em; height: 0.9em; }
+/* Show the clipboard icon; hide the check — swap on .md-copied. */
+.markdown-body code.md-badge .md-badge-copy .md-badge-check { display: none; }
+.markdown-body code.md-badge .md-badge-copy.md-copied .md-badge-clip { display: none; }
+.markdown-body code.md-badge .md-badge-copy.md-copied .md-badge-check {
+  display: inline-block;
+  color: #16a34a;
 }
 
 /* ------------------------------------------------------------------ */
