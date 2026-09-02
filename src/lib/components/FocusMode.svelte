@@ -125,12 +125,12 @@
   aria-modal="true"
   aria-label="Focus mode"
 >
-  <!-- Backdrop: when the active tint is a canvas-fx one (Glitter / Fireworks /
-       Meteor), fill the stage with that animation; otherwise the aurora blobs
-       + noise grain (mirrors the Sprint 23 sidebar treatment). -->
+  <!-- Backdrop: when the active tint is a canvas-fx one, fill the stage with
+       that animation (dark-rendered so a light-surface fx like champagne Glitter
+       still reads on the dark stage); otherwise the aurora blobs + noise grain. -->
   {#if theme.selectedFx}
     {#key theme.selectedFx}
-      <SidebarFx fx={theme.selectedFx} />
+      <SidebarFx fx={theme.selectedFx} dark />
     {/key}
   {:else}
     <div class="aurora" aria-hidden="true">

@@ -21,6 +21,7 @@
       title: "Always available",
       items: [
         { keys: "⌘ K", label: "Search everything · jump anywhere (command palette)" },
+        { keys: "⌘ E", label: "Edit ⇄ preview the open note" },
         { keys: "?", label: "Show / hide this help" },
         { keys: "Esc", label: "Cancel edit · close panel · close help" },
         { keys: "Enter", label: "Commit edit" },

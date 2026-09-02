@@ -197,6 +197,15 @@
     queueMicrotask(() => textarea?.focus());
   }
 
+  // Toggle preview ⇄ edit — bound by NoteView to the ⌘E shortcut. No-op on
+  // read-only surfaces. Cancels any open per-block edit first.
+  export function toggleEdit() {
+    if (readOnly) return;
+    if (blockEdit) cancelBlock();
+    if (editing) void finishEditing();
+    else startEditing();
+  }
+
   // Blur handler on the textarea. For notes (floatingEdit) edit mode is LOCKED:
   // losing focus (clicking away, switching windows/apps) only *saves* the draft
   // and stays in edit mode — so it never renders or scroll-jumps behind your
@@ -731,7 +740,7 @@
     <button
       type="button"
       onclick={finishEditing}
-      title="Finish editing — show the rendered note"
+      title="Finish editing — show the rendered note (⌘E)"
       aria-label="Finish editing"
       style={fabStyle}
       class="{fabPos} bottom-6 right-6 z-20 inline-flex items-center gap-2 rounded-full btn-accent px-4 py-2.5 text-sm font-medium shadow-lg transition-colors"
@@ -867,7 +876,7 @@
       <button
         type="button"
         onclick={startEditing}
-        title="Edit note"
+        title="Edit note (⌘E)"
         aria-label="Edit note"
         style={fabStyle}
         class="{fabPos} bottom-6 right-6 z-20 inline-flex items-center gap-2 rounded-full border border-neutral-200/70 bg-white/90 px-4 py-2.5 text-sm font-medium text-neutral-700 shadow-lg backdrop-blur transition-colors hover:bg-neutral-100 dark:border-neutral-700/70 dark:bg-neutral-900/85 dark:text-neutral-200 dark:hover:bg-neutral-800"

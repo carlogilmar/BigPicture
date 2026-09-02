@@ -26,7 +26,7 @@ export type Tint = {
   // Canvas particle surfaces (Sprint 65): a hand-rolled <canvas> animation
   // (SidebarFx.svelte) renders over `base` instead of the CSS aurora blobs.
   // Always dark surfaces (light text), light-mode only — like aurora.
-  fx?: "glitter" | "fireworks" | "meteor";
+  fx?: "glitter" | "fireworks" | "meteor" | "constellation" | "rain";
   // Primary-action accent (buttons/CTAs follow the selected theme). For plain
   // hue tints it's derived from `hue`; animated/fx/ink tints set it explicitly.
   accent?: string;
@@ -46,21 +46,10 @@ export const SIDEBAR_TINTS: Tint[] = [
   // Light colour washes.
   { name: "blue", label: "Blue", hue: 217 },
   { name: "rose", label: "Rose", hue: 350 },
-  { name: "indigo", label: "Indigo", hue: 245 },
   // Dark surfaces (light text).
   { name: "forest", label: "Forest", hue: 155, dark: true },
   { name: "wine", label: "Wine", hue: 345, dark: true },
-  { name: "plum", label: "Plum", hue: 290, dark: true },
   // Animated aurora gradients (dark, light text).
-  {
-    name: "aurora",
-    label: "Aurora (animated)",
-    hue: null,
-    dark: true,
-    base: "hsl(228 42% 9%)",
-    aurora: ["#2dd4bf", "#4ade80", "#818cf8"],
-    accent: "#14b8a6",
-  },
   {
     name: "ember",
     label: "Ember (animated)",
@@ -71,33 +60,6 @@ export const SIDEBAR_TINTS: Tint[] = [
     accent: "#fb7185",
   },
   {
-    name: "ocean",
-    label: "Ocean (animated)",
-    hue: null,
-    dark: true,
-    base: "hsl(215 55% 10%)",
-    aurora: ["#38bdf8", "#22d3ee", "#6366f1"],
-    accent: "#0ea5e9",
-  },
-  {
-    name: "sunset",
-    label: "Sunset (animated)",
-    hue: null,
-    dark: true,
-    base: "hsl(268 40% 10%)",
-    aurora: ["#f97316", "#ef4444", "#fbbf24"],
-    accent: "#f97316",
-  },
-  {
-    name: "ice",
-    label: "Ice (animated)",
-    hue: null,
-    dark: true,
-    base: "hsl(210 30% 12%)",
-    aurora: ["#e2e8f0", "#94a3b8", "#38bdf8"],
-    accent: "#0ea5e9",
-  },
-  {
     name: "cosmos",
     label: "Cosmos (animated)",
     hue: null,
@@ -106,17 +68,8 @@ export const SIDEBAR_TINTS: Tint[] = [
     aurora: ["#6366f1", "#d946ef", "#22d3ee"],
     accent: "#8b5cf6",
   },
-  // Canvas particle surfaces (dark, light text) — a <canvas> animation instead
-  // of CSS blobs (see SidebarFx.svelte).
-  {
-    name: "glitter",
-    label: "Glitter (animated)",
-    hue: null,
-    dark: true,
-    base: "hsl(258 42% 9%)",
-    fx: "glitter",
-    accent: "#8b5cf6",
-  },
+  // Canvas particle surfaces — a <canvas> animation instead of CSS blobs (see
+  // SidebarFx.svelte). Most are dark (light text); Glitter is a light surface.
   {
     name: "fireworks",
     label: "Fireworks (animated)",
@@ -135,6 +88,34 @@ export const SIDEBAR_TINTS: Tint[] = [
     fx: "meteor",
     accent: "#3b82f6",
   },
+  {
+    name: "constellation",
+    label: "Constellation (animated)",
+    hue: null,
+    dark: true,
+    base: "hsl(178 45% 7%)",
+    fx: "constellation",
+    accent: "#14b8a6",
+  },
+  {
+    name: "rain",
+    label: "Rain (animated)",
+    hue: null,
+    dark: true,
+    base: "hsl(24 50% 7%)",
+    fx: "rain",
+    accent: "#fb923c",
+  },
+  // Glitter is a LIGHT surface (dark text) — champagne flecks on cream. Focus
+  // mode (a dark stage) skips light fx tints, see `selectedFx`.
+  {
+    name: "glitter",
+    label: "Glitter (animated, light)",
+    hue: null,
+    base: "hsl(40 44% 96%)",
+    fx: "glitter",
+    accent: "#d97706",
+  },
   // Light aurora surfaces (dark text): pastel blobs multiply-blended over a
   // near-white base — see Sidebar.svelte's .aurora-light rules.
   {
@@ -144,14 +125,6 @@ export const SIDEBAR_TINTS: Tint[] = [
     base: "hsl(210 60% 97%)",
     aurora: ["#7dd3fc", "#a5b4fc", "#6ee7b7"],
     accent: "#0ea5e9",
-  },
-  {
-    name: "blossom",
-    label: "Blossom (animated, light)",
-    hue: null,
-    base: "hsl(330 60% 97%)",
-    aurora: ["#f9a8d4", "#c4b5fd", "#fda4af"],
-    accent: "#ec4899",
   },
 ];
 
@@ -289,15 +262,17 @@ class ThemeStore {
   // The active tint's canvas-fx animation name, or null. Light-mode only, same
   // as aurora — dark mode forces a plain black sidebar. The Sidebar renders
   // SidebarFx from this.
-  get sidebarFx(): "glitter" | "fireworks" | "meteor" | null {
+  get sidebarFx(): Tint["fx"] | null {
     if (this.resolved === "dark") return null;
     return findTint(this.sidebarTint)?.fx ?? null;
   }
 
-  // The selected tint's canvas-fx name IGNORING light/dark — Focus mode (the
-  // screensaver) is always a dark stage, so it shows the animation regardless
-  // of app theme, unlike the sidebar.
-  get selectedFx(): "glitter" | "fireworks" | "meteor" | null {
+  // The selected tint's canvas-fx name IGNORING app light/dark — Focus mode (the
+  // screensaver) is always a dark stage, so it shows the animation regardless of
+  // app theme, unlike the sidebar. Light-surface fx (champagne Glitter) still
+  // apply here — Focus renders them with SidebarFx's `dark` flag so they read on
+  // the dark stage.
+  get selectedFx(): Tint["fx"] | null {
     return findTint(this.sidebarTint)?.fx ?? null;
   }
 

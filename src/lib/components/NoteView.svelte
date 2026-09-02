@@ -44,7 +44,20 @@
   async function commitBody(next: string) {
     await app.updateSelectedNoteBody(next);
   }
+
+  // ⌘E toggles the note between preview and edit. Contextual (this listener only
+  // exists while a note is open), so it stays out of the global shortcut set.
+  let editor: MarkdownEditor | undefined = $state();
+  function onWindowKey(e: KeyboardEvent) {
+    if ((e.metaKey || e.ctrlKey) && (e.key === "e" || e.key === "E")) {
+      if (editingTitle) return; // don't hijack ⌘E while renaming the title
+      e.preventDefault();
+      editor?.toggleEdit();
+    }
+  }
 </script>
+
+<svelte:window onkeydown={onWindowKey} />
 
 {#if app.selectedNote}
   <main class="mx-auto flex min-h-full w-full max-w-4xl flex-col px-8 py-10">
@@ -110,6 +123,7 @@
 
     {#key app.selectedNote.id}
       <MarkdownEditor
+        bind:this={editor}
         value={app.selectedNote.body}
         placeholder="Write your note in markdown…"
         minHeight="18rem"

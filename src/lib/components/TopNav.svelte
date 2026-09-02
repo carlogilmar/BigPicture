@@ -95,11 +95,15 @@
     fx?: string;
   }): string {
     if (tint.fx === "glitter")
-      return "linear-gradient(135deg, #2a1f4d, #e8c76a 55%, #b98bff)";
+      return "linear-gradient(135deg, #fbf6ec, #e8c76a 70%, #d9a441)";
     if (tint.fx === "fireworks")
       return "linear-gradient(135deg, #0a1030, #ff6b6b 45%, #ffd166 70%, #7c9bff)";
     if (tint.fx === "meteor")
       return "linear-gradient(135deg, #0a1226, #7dd3fc 70%, #ffffff)";
+    if (tint.fx === "constellation")
+      return "linear-gradient(135deg, #06201d, #2dd4bf 75%, #dffdf6)";
+    if (tint.fx === "rain")
+      return "linear-gradient(135deg, #1a0f0a, #fb923c 70%, #ffd3a8)";
     if (tint.aurora) {
       return `linear-gradient(135deg, ${tint.aurora.join(", ")})`;
     }
